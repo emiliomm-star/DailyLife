@@ -1,0 +1,11 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "dailylife",
+	"compatibility_date": "2026-10-01",
+	// Sirve la carpeta generada por "npm run build" como sitio estático.
+	"assets": {
+		"directory": "./dist",
+		// La app es una SPA: las rutas desconocidas devuelven index.html.
+		"not_found_handling": "single-page-application",
+	},
+}

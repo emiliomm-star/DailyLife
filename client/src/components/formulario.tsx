@@ -1,0 +1,141 @@
+import type { PropsWithChildren } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  type TextInputProps,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+
+type CampoProps = TextInputProps & {
+  etiqueta: string;
+};
+
+export function Campo({ etiqueta, style, ...resto }: CampoProps) {
+  const theme = useTheme();
+
+  return (
+    <ThemedView style={styles.campo}>
+      <ThemedText type="small" themeColor="textSecondary">
+        {etiqueta}
+      </ThemedText>
+      <TextInput
+        accessibilityLabel={etiqueta}
+        placeholderTextColor={theme.textSecondary}
+        style={[
+          styles.input,
+          { backgroundColor: theme.backgroundElement, color: theme.text },
+          style,
+        ]}
+        {...resto}
+      />
+    </ThemedView>
+  );
+}
+
+type BotonProps = {
+  titulo: string;
+  onPress: () => void;
+  cargando?: boolean;
+  secundario?: boolean;
+};
+
+export function Boton({ titulo, onPress, cargando = false, secundario = false }: BotonProps) {
+  const theme = useTheme();
+  const fondo = secundario ? theme.backgroundElement : theme.text;
+  const color = secundario ? theme.text : theme.background;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={cargando}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.boton,
+        { backgroundColor: fondo, opacity: pressed || cargando ? 0.7 : 1 },
+      ]}>
+      {cargando ? (
+        <ActivityIndicator color={color} />
+      ) : (
+        <ThemedText type="smallBold" style={{ color }}>
+          {titulo}
+        </ThemedText>
+      )}
+    </Pressable>
+  );
+}
+
+/** Contenedor de pantallas de formulario: centrado, con ancho máximo y margen lateral de 16px. */
+export function Pantalla({ children }: PropsWithChildren) {
+  return (
+    <ThemedView style={styles.pantalla}>
+      <SafeAreaView style={styles.pantallaInterior} edges={['top', 'bottom']}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <ThemedView style={styles.columna}>{children}</ThemedView>
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+export function Mensaje({ texto }: { texto: string }) {
+  return (
+    <ThemedText type="small" role="alert" style={styles.mensaje}>
+      {texto}
+    </ThemedText>
+  );
+}
+
+const styles = StyleSheet.create({
+  pantalla: {
+    flex: 1,
+  },
+  pantallaInterior: {
+    flex: 1,
+  },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.four,
+  },
+  columna: {
+    gap: Spacing.three,
+    maxWidth: MaxContentWidth,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  campo: {
+    gap: Spacing.one,
+    width: '100%',
+  },
+  input: {
+    borderRadius: Spacing.two,
+    fontSize: 16,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two + Spacing.one,
+    width: '100%',
+  },
+  boton: {
+    alignItems: 'center',
+    borderRadius: Spacing.two,
+    justifyContent: 'center',
+    minHeight: 48,
+    paddingHorizontal: Spacing.three,
+    width: '100%',
+  },
+  mensaje: {
+    color: '#D32F2F',
+    textAlign: 'center',
+  },
+});

@@ -11,6 +11,7 @@ import {
 
 import { obtenerGrupoActual, type Grupo } from '@/lib/grupos';
 import { supabase } from '@/lib/supabase';
+import { describirError, type ErrorDescrito } from '@/lib/textos';
 
 /**
  * cargando:   comprobando sesión o grupo.
@@ -21,11 +22,15 @@ import { supabase } from '@/lib/supabase';
  */
 export type EstadoAuth = 'cargando' | 'sin-sesion' | 'sin-grupo' | 'app' | 'error';
 
-type InfoGrupo = { userId: string; grupo: Grupo | null } | { userId: string; error: true };
+type InfoGrupo =
+  | { userId: string; grupo: Grupo | null }
+  | { userId: string; error: ErrorDescrito };
 
 type ContextoAuth = {
   estado: EstadoAuth;
   grupo: Grupo | null;
+  /** Error al cargar el grupo, cuando estado es 'error'. */
+  errorGrupo: ErrorDescrito | null;
   cerrarSesion: () => Promise<void>;
   recargarGrupo: () => Promise<void>;
 };
@@ -63,8 +68,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
     try {
       const grupo = await obtenerGrupoActual(id);
       setInfoGrupo({ userId: id, grupo });
-    } catch {
-      setInfoGrupo({ userId: id, error: true });
+    } catch (error) {
+      setInfoGrupo({ userId: id, error: describirError(error) });
     }
   }, []);
 
@@ -88,6 +93,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const valor = useMemo<ContextoAuth>(() => {
     let estado: EstadoAuth;
     let grupo: Grupo | null = null;
+    let errorGrupo: ErrorDescrito | null = null;
 
     if (!sesionCargada) {
       estado = 'cargando';
@@ -97,6 +103,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       estado = 'cargando';
     } else if ('error' in infoGrupo) {
       estado = 'error';
+      errorGrupo = infoGrupo.error;
     } else if (!infoGrupo.grupo) {
       estado = 'sin-grupo';
     } else {
@@ -104,7 +111,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       grupo = infoGrupo.grupo;
     }
 
-    return { estado, grupo, cerrarSesion, recargarGrupo };
+    return { estado, grupo, errorGrupo, cerrarSesion, recargarGrupo };
   }, [sesionCargada, userId, infoGrupo, cerrarSesion, recargarGrupo]);
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

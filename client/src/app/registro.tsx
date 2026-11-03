@@ -4,35 +4,40 @@ import { useState } from 'react';
 import { Boton, Campo, Mensaje, Pantalla } from '@/components/formulario';
 import { ThemedText } from '@/components/themed-text';
 import { supabase } from '@/lib/supabase';
-import { textos, traducirError } from '@/lib/textos';
+import { describirError, textos, type ErrorDescrito } from '@/lib/textos';
 
 export default function RegistroScreen() {
   const [email, setEmail] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDescrito | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   async function crearCuenta() {
     setError(null);
     setAviso(null);
     setCargando(true);
-    const { data, error: errorRegistro } = await supabase.auth.signUp({
-      email: email.trim(),
-      password: contrasena,
-    });
-    setCargando(false);
+    try {
+      const { data, error: errorRegistro } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: contrasena,
+      });
 
-    if (errorRegistro) {
-      setError(traducirError(errorRegistro.message));
-      return;
+      if (errorRegistro) {
+        setError(describirError(errorRegistro));
+        return;
+      }
+      // Si la confirmación por email está activa, no hay sesión todavía.
+      // En ese caso avisamos y el usuario entra después de confirmar.
+      if (!data.session) {
+        setAviso(textos.registro.revisaCorreo);
+      }
+      // Con sesión, el AuthProvider detecta el cambio y el layout pasa a la pantalla de grupo.
+    } catch (e) {
+      setError(describirError(e));
+    } finally {
+      setCargando(false);
     }
-    // Si la confirmación por email está activa, no hay sesión todavía.
-    // En ese caso avisamos y el usuario entra después de confirmar.
-    if (!data.session) {
-      setAviso(textos.registro.revisaCorreo);
-    }
-    // Con sesión, el AuthProvider detecta el cambio y el layout pasa a la pantalla de grupo.
   }
 
   return (
@@ -60,7 +65,7 @@ export default function RegistroScreen() {
         onSubmitEditing={crearCuenta}
       />
 
-      {error && <Mensaje texto={error} />}
+      {error && <Mensaje texto={error.texto} detalle={error.detalle} />}
       {aviso && <ThemedText type="small" style={{ textAlign: 'center' }}>{aviso}</ThemedText>}
 
       <Boton titulo={textos.registro.crear} onPress={crearCuenta} cargando={cargando} />

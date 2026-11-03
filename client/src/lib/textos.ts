@@ -16,6 +16,7 @@ export const textos = {
     entrar: 'Entrar',
     sinCuenta: 'Crear cuenta con código de invitación',
     credencialesIncorrectas: 'Email o contraseña incorrectos.',
+    emailNoConfirmado: 'Tu email todavía no está confirmado. Confírmalo desde el correo y vuelve a entrar.',
   },
   registro: {
     titulo: 'Crear cuenta',
@@ -49,10 +50,53 @@ export const textos = {
   },
 } as const;
 
-/** Traduce los errores habituales de Supabase Auth y de las funciones de la base de datos. */
-export function traducirError(mensaje: string): string {
-  if (mensaje.includes('Invalid login credentials')) return textos.login.credencialesIncorrectas;
-  if (mensaje.includes('already registered')) return textos.registro.emailEnUso;
-  if (mensaje.includes('Código de invitación no válido')) return textos.grupo.codigoNoValido;
-  return textos.general.errorGenerico;
+export type ErrorDescrito = {
+  /** Mensaje amable para el usuario. */
+  texto: string;
+  /** Datos técnicos (código, estado HTTP, mensaje original) para diagnosticar el problema. */
+  detalle: string;
+};
+
+/** Mensajes de Supabase que tenemos traducidos. La comparación es por fragmento. */
+const mensajesConocidos: ReadonlyArray<readonly [string, string]> = [
+  ['Invalid login credentials', textos.login.credencialesIncorrectas],
+  ['Email not confirmed', textos.login.emailNoConfirmado],
+  ['already registered', textos.registro.emailEnUso],
+  ['Código de invitación no válido', textos.grupo.codigoNoValido],
+];
+
+/**
+ * Convierte cualquier error (de Supabase Auth, de PostgREST o de red) en un texto para el usuario
+ * y un detalle técnico. El detalle se muestra siempre, para saber qué ha fallado.
+ * Nunca incluye contraseñas ni tokens: solo código, estado, mensaje y pistas del error.
+ */
+export function describirError(error: unknown): ErrorDescrito {
+  const e = (error ?? {}) as {
+    message?: string;
+    code?: string;
+    status?: number;
+    name?: string;
+    details?: string;
+    hint?: string;
+  };
+  const mensaje = e.message ?? (error instanceof Error ? error.message : String(error));
+
+  // Se registra completo en la consola del navegador para poder inspeccionarlo.
+  console.warn('[DailyLife] error:', error);
+
+  const conocido = mensajesConocidos.find(([fragmento]) => mensaje.includes(fragmento));
+  // Sin código propio, el nombre de la clase (TypeError, AuthRetryableFetchError…) ayuda a identificarlo.
+  const nombre = !e.code && e.name && e.name !== 'Error' ? e.name : null;
+  const partes = [
+    nombre,
+    e.code ?? (e.status ? `HTTP ${e.status}` : null),
+    mensaje,
+    e.details,
+    e.hint ? `Pista: ${e.hint}` : null,
+  ].filter((parte): parte is string => Boolean(parte));
+
+  return {
+    texto: conocido?.[1] ?? textos.general.errorGenerico,
+    detalle: partes.join(' · ') || 'Sin detalles',
+  };
 }

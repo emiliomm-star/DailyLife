@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { Boton, Pantalla } from '@/components/formulario';
+import { Boton, Mensaje, Pantalla } from '@/components/formulario';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
@@ -41,7 +41,7 @@ export default function RootLayout() {
  * y con grupo, la app.
  */
 function RootStack() {
-  const { estado, cerrarSesion, recargarGrupo } = useAuth();
+  const { estado, errorGrupo, cerrarSesion, recargarGrupo } = useAuth();
 
   useEffect(() => {
     if (estado !== 'cargando') {
@@ -66,6 +66,7 @@ function RootStack() {
         <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center' }}>
           {textos.errorGrupo.descripcion}
         </ThemedText>
+        {errorGrupo && <Mensaje texto={errorGrupo.texto} detalle={errorGrupo.detalle} />}
         <Boton titulo={textos.general.reintentar} onPress={recargarGrupo} />
         <Boton titulo={textos.general.cerrarSesion} onPress={cerrarSesion} secundario />
       </Pantalla>

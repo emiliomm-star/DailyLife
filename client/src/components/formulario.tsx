@@ -88,11 +88,19 @@ export function Pantalla({ children }: PropsWithChildren) {
   );
 }
 
-export function Mensaje({ texto }: { texto: string }) {
+/** Aviso de error: el texto para el usuario y, debajo, el detalle técnico (seleccionable para copiarlo). */
+export function Mensaje({ texto, detalle }: { texto: string; detalle?: string }) {
   return (
-    <ThemedText type="small" role="alert" style={styles.mensaje}>
-      {texto}
-    </ThemedText>
+    <ThemedView style={styles.mensajeContenedor} role="alert">
+      <ThemedText type="smallBold" style={styles.mensaje}>
+        {texto}
+      </ThemedText>
+      {detalle && (
+        <ThemedText type="small" themeColor="textSecondary" selectable style={styles.detalle}>
+          {detalle}
+        </ThemedText>
+      )}
+    </ThemedView>
   );
 }
 
@@ -134,8 +142,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     width: '100%',
   },
+  mensajeContenedor: {
+    borderRadius: Spacing.two,
+    gap: Spacing.one,
+    padding: Spacing.three,
+    width: '100%',
+  },
   mensaje: {
     color: '#D32F2F',
+    textAlign: 'center',
+  },
+  detalle: {
+    fontSize: 12,
+    lineHeight: 16,
     textAlign: 'center',
   },
 });

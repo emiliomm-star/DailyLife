@@ -7,14 +7,14 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { crearGrupo, unirseAGrupo } from '@/lib/grupos';
-import { textos, traducirError } from '@/lib/textos';
+import { describirError, textos, type ErrorDescrito } from '@/lib/textos';
 
 export default function GrupoScreen() {
   const { recargarGrupo, cerrarSesion } = useAuth();
   const [nombre, setNombre] = useState('');
   const [codigo, setCodigo] = useState('');
   const [cargando, setCargando] = useState<'crear' | 'unirse' | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDescrito | null>(null);
 
   async function enviar(accion: 'crear' | 'unirse') {
     setError(null);
@@ -28,7 +28,7 @@ export default function GrupoScreen() {
       // Recarga el grupo: el layout pasa a la app.
       await recargarGrupo();
     } catch (e) {
-      setError(traducirError(e instanceof Error ? e.message : ''));
+      setError(describirError(e));
     } finally {
       setCargando(null);
     }
@@ -75,7 +75,7 @@ export default function GrupoScreen() {
         />
       </ThemedView>
 
-      {error && <Mensaje texto={error} />}
+      {error && <Mensaje texto={error.texto} detalle={error.detalle} />}
 
       <Boton titulo={textos.general.cerrarSesion} onPress={cerrarSesion} secundario />
     </Pantalla>

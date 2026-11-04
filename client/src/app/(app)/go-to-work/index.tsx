@@ -17,6 +17,7 @@ import {
   sembrarEstadosIniciales,
 } from '@/lib/go-to-work';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
+import { useCambiosGrupo } from '@/hooks/use-cambios-grupo';
 
 const t = textos.goToWork;
 
@@ -85,6 +86,21 @@ export default function GoToWorkScreen() {
   useEffect(() => {
     cargarRegistros();
   }, [cargarRegistros]);
+
+  // Cambios hechos por cualquier miembro del grupo (incluido el widget): se recargan los datos.
+  const recargarEstados = useCallback(async () => {
+    if (!grupoId) return;
+    try {
+      setEstados(await listarEstados(grupoId));
+    } catch (e) {
+      setError(describirError(e));
+    }
+  }, [grupoId]);
+
+  useCambiosGrupo(grupoId, () => {
+    cargarRegistros();
+    recargarEstados();
+  });
 
   // Al volver de "Gestionar estados", se recarga la lista de botones.
   useFocusEffect(

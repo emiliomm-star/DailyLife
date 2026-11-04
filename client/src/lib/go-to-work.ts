@@ -1,0 +1,121 @@
+import { supabase } from '@/lib/supabase';
+
+export type EstadoTrabajo = {
+  id: string;
+  nombre: string;
+  orden: number;
+  activo: boolean;
+};
+
+export type RegistroTrabajo = {
+  id: string;
+  marcado_en: string;
+  estado_id: string;
+  nombre: string;
+};
+
+/** Límites del día local [inicio, fin) para consultar el historial de una fecha. */
+export function limitesDelDia(fecha: Date): { desde: Date; hasta: Date } {
+  const desde = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+  const hasta = new Date(desde);
+  hasta.setDate(hasta.getDate() + 1);
+  return { desde, hasta };
+}
+
+/** Estados del grupo. Por defecto solo los activos, que son los que aparecen como botones. */
+export async function listarEstados(grupoId: string, incluirInactivos = false): Promise<EstadoTrabajo[]> {
+  let consulta = supabase
+    .from('estados_trabajo')
+    .select('id, nombre, orden, activo')
+    .eq('grupo_id', grupoId)
+    .order('orden')
+    .order('nombre');
+
+  if (!incluirInactivos) {
+    consulta = consulta.eq('activo', true);
+  }
+
+  const { data, error } = await consulta;
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * Crea los estados de ejemplo si el grupo todavía no tiene ninguno.
+ * Es seguro llamarla varias veces: la restricción unique(grupo_id, nombre) evita duplicados.
+ */
+export async function sembrarEstadosIniciales(grupoId: string, nombres: readonly string[]): Promise<void> {
+  const existentes = await listarEstados(grupoId, true);
+  if (existentes.length > 0) return;
+
+  const { error } = await supabase.from('estados_trabajo').upsert(
+    nombres.map((nombre, indice) => ({ grupo_id: grupoId, nombre, orden: indice + 1 })),
+    { onConflict: 'grupo_id,nombre', ignoreDuplicates: true },
+  );
+  if (error) throw error;
+}
+
+export async function crearEstado(grupoId: string, nombre: string, orden: number): Promise<void> {
+  const { error } = await supabase
+    .from('estados_trabajo')
+    .insert({ grupo_id: grupoId, nombre: nombre.trim(), orden });
+  if (error) throw error;
+}
+
+export async function renombrarEstado(estadoId: string, nombre: string): Promise<void> {
+  const { error } = await supabase
+    .from('estados_trabajo')
+    .update({ nombre: nombre.trim() })
+    .eq('id', estadoId);
+  if (error) throw error;
+}
+
+/**
+ * Quita un estado de la lista. Si ya tiene registros no se puede borrar (la base lo impide para
+ * conservar el historial), así que se desactiva. Si no tiene registros, se borra.
+ */
+export async function quitarEstado(estadoId: string): Promise<void> {
+  const { count, error: errorConteo } = await supabase
+    .from('registros_trabajo')
+    .select('id', { count: 'exact', head: true })
+    .eq('estado_id', estadoId);
+  if (errorConteo) throw errorConteo;
+
+  if (count && count > 0) {
+    const { error } = await supabase.from('estados_trabajo').update({ activo: false }).eq('id', estadoId);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('estados_trabajo').delete().eq('id', estadoId);
+    if (error) throw error;
+  }
+}
+
+/** Registra que se ha marcado un estado ahora mismo. La fecha y hora la guarda la base de datos. */
+export async function registrarEstado(grupoId: string, estadoId: string): Promise<void> {
+  const { error } = await supabase
+    .from('registros_trabajo')
+    .insert({ grupo_id: grupoId, estado_id: estadoId });
+  if (error) throw error;
+}
+
+/** Historial de un intervalo, del más reciente al más antiguo. */
+export async function listarRegistros(grupoId: string, desde: Date, hasta: Date): Promise<RegistroTrabajo[]> {
+  const { data, error } = await supabase
+    .from('registros_trabajo')
+    .select('id, marcado_en, estado_id, estados_trabajo(nombre)')
+    .eq('grupo_id', grupoId)
+    .gte('marcado_en', desde.toISOString())
+    .lt('marcado_en', hasta.toISOString())
+    .order('marcado_en', { ascending: false });
+  if (error) throw error;
+
+  return (data ?? []).map((fila) => {
+    const estado = fila.estados_trabajo as unknown as { nombre: string } | null;
+    return {
+      id: fila.id,
+      marcado_en: fila.marcado_en,
+      estado_id: fila.estado_id,
+      nombre: estado?.nombre ?? '—',
+    };
+  });
+}

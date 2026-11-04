@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
+import { AppState, Platform } from 'react-native';
 
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
@@ -44,6 +45,28 @@ export function SincronizacionProvider({ children }: PropsWithChildren) {
       supabase.removeChannel(canal);
     };
   }, [grupoId]);
+
+  // Al volver a la app (o a la pestaña), iOS puede haber cortado la conexión en tiempo real:
+  // los cambios hechos mientras tanto no llegan después, así que se recargan todos los datos.
+  useEffect(() => {
+    const recargarTodo = () =>
+      setVersiones((actuales) =>
+        Object.fromEntries(TABLAS_SINCRONIZADAS.map((tabla) => [tabla, actuales[tabla] + 1])) as Versiones,
+      );
+
+    if (Platform.OS === 'web') {
+      const alCambiarVisibilidad = () => {
+        if (document.visibilityState === 'visible') recargarTodo();
+      };
+      document.addEventListener('visibilitychange', alCambiarVisibilidad);
+      return () => document.removeEventListener('visibilitychange', alCambiarVisibilidad);
+    }
+
+    const suscripcion = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') recargarTodo();
+    });
+    return () => suscripcion.remove();
+  }, []);
 
   return <ContextoSincronizacion.Provider value={versiones}>{children}</ContextoSincronizacion.Provider>;
 }

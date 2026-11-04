@@ -17,7 +17,7 @@ import {
   sembrarEstadosIniciales,
 } from '@/lib/go-to-work';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
-import { useVersionTabla } from '@/lib/sincronizacion';
+import { useEstadoConexion, useVersionTabla } from '@/lib/sincronizacion';
 
 const t = textos.goToWork;
 
@@ -36,6 +36,7 @@ function mismoDia(a: Date, b: Date): boolean {
 export default function GoToWorkScreen() {
   const { grupo } = useAuth();
   const grupoId = grupo?.id;
+  const conexion = useEstadoConexion();
 
   const [estados, setEstados] = useState<EstadoTrabajo[]>([]);
   const [registros, setRegistros] = useState<RegistroTrabajo[]>([]);
@@ -150,6 +151,9 @@ export default function GoToWorkScreen() {
       <ThemedView style={styles.columna}>
         <ThemedText type="small" themeColor="textSecondary" style={styles.centrado}>
           {t.marcar}
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.centrado}>
+          {conexion === 'en-directo' ? '● En directo' : conexion === 'conectando' ? '○ Conectando…' : '○ Sin conexión en directo'}
         </ThemedText>
 
         {cargandoEstados ? (

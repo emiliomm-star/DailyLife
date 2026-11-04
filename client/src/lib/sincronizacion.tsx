@@ -13,11 +13,15 @@ export type TablaSincronizada = (typeof TABLAS_SINCRONIZADAS)[number];
 
 type Versiones = Record<TablaSincronizada, number>;
 
+export type EstadoConexion = 'conectando' | 'en-directo' | 'sin-conexion';
+
 const versionesIniciales = Object.fromEntries(
   TABLAS_SINCRONIZADAS.map((tabla) => [tabla, 0]),
 ) as Versiones;
 
-const ContextoSincronizacion = createContext<Versiones>(versionesIniciales);
+type ContextoSync = { versiones: Versiones; conexion: EstadoConexion };
+
+const ContextoSincronizacion = createContext<ContextoSync>({ versiones: versionesIniciales, conexion: 'conectando' });
 
 /**
  * Mantiene una única suscripción en tiempo real para todo el grupo.
@@ -27,6 +31,7 @@ export function SincronizacionProvider({ children }: PropsWithChildren) {
   const { grupo } = useAuth();
   const grupoId = grupo?.id;
   const [versiones, setVersiones] = useState<Versiones>(versionesIniciales);
+  const [conexion, setConexion] = useState<EstadoConexion>('conectando');
 
   useEffect(() => {
     if (!grupoId) return;
@@ -39,7 +44,10 @@ export function SincronizacionProvider({ children }: PropsWithChildren) {
         () => setVersiones((actuales) => ({ ...actuales, [tabla]: actuales[tabla] + 1 })),
       );
     }
-    canal.subscribe();
+    canal.subscribe((estado) => {
+      if (estado === 'SUBSCRIBED') setConexion('en-directo');
+      else if (estado === 'CHANNEL_ERROR' || estado === 'TIMED_OUT' || estado === 'CLOSED') setConexion('sin-conexion');
+    });
 
     return () => {
       supabase.removeChannel(canal);
@@ -68,10 +76,17 @@ export function SincronizacionProvider({ children }: PropsWithChildren) {
     return () => suscripcion.remove();
   }, []);
 
-  return <ContextoSincronizacion.Provider value={versiones}>{children}</ContextoSincronizacion.Provider>;
+  return (
+    <ContextoSincronizacion.Provider value={{ versiones, conexion }}>{children}</ContextoSincronizacion.Provider>
+  );
 }
 
 /** Número que cambia cada vez que la tabla cambia en el grupo. Úsalo como dependencia de useEffect para recargar. */
 export function useVersionTabla(tabla: TablaSincronizada): number {
-  return useContext(ContextoSincronizacion)[tabla];
+  return useContext(ContextoSincronizacion).versiones[tabla];
+}
+
+/** Estado de la conexión en tiempo real, para mostrarlo al usuario. */
+export function useEstadoConexion(): EstadoConexion {
+  return useContext(ContextoSincronizacion).conexion;
 }

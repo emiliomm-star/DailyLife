@@ -5,7 +5,8 @@ import { Platform } from 'react-native';
 // Expo inyecta las variables EXPO_PUBLIC_* en tiempo de build (desde client/.env.local en local).
 // Deben escribirse literalmente así para que el bundler las sustituya.
 // trim(): espacios o saltos de línea accidentales en .env.local llegan como cabecera apikey vacía.
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
+// Si la URL llega con /rest/v1 o /auth/v1 al final, se quita: la librería ya añade esas rutas.
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, '').replace(/\/(rest|auth)\/v1$/, '');
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
 
 if (!supabaseUrl || !supabasePublishableKey) {

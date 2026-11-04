@@ -17,7 +17,7 @@ import {
   sembrarEstadosIniciales,
 } from '@/lib/go-to-work';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
-import { useCambiosGrupo } from '@/hooks/use-cambios-grupo';
+import { useVersionTabla } from '@/lib/sincronizacion';
 
 const t = textos.goToWork;
 
@@ -83,11 +83,14 @@ export default function GoToWorkScreen() {
     }
   }, [grupoId, fecha]);
 
+  // Se recarga al cambiar la fecha y cuando cambian los registros del grupo (aunque los haga otro miembro).
+  const versionRegistros = useVersionTabla('registros_trabajo');
+  const versionEstados = useVersionTabla('estados_trabajo');
+
   useEffect(() => {
     cargarRegistros();
-  }, [cargarRegistros]);
+  }, [cargarRegistros, versionRegistros]);
 
-  // Cambios hechos por cualquier miembro del grupo (incluido el widget): se recargan los datos.
   const recargarEstados = useCallback(async () => {
     if (!grupoId) return;
     try {
@@ -97,10 +100,9 @@ export default function GoToWorkScreen() {
     }
   }, [grupoId]);
 
-  useCambiosGrupo(grupoId, () => {
-    cargarRegistros();
+  useEffect(() => {
     recargarEstados();
-  });
+  }, [recargarEstados, versionEstados]);
 
   // Al volver de "Gestionar estados", se recarga la lista de botones.
   useFocusEffect(

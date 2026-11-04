@@ -1,6 +1,12 @@
 import { Stack } from 'expo-router';
 
-/** Zona protegida de la app (solo con sesión y grupo). Navegación con pila: el dashboard y sus módulos. */
+import { SincronizacionProvider } from '@/lib/sincronizacion';
+
+/** Zona protegida de la app (solo con sesión y grupo). Todas sus pantallas se sincronizan en tiempo real. */
 export default function AppLayout() {
-  return <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }} />;
+  return (
+    <SincronizacionProvider>
+      <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }} />
+    </SincronizacionProvider>
+  );
 }

@@ -63,9 +63,12 @@ function construirWidget(modo, datos, error) {
   widget.addSpacer(6);
 
   if (error) {
-    const t = widget.addText('Sin conexión');
+    const t = widget.addText('Error');
     t.font = Font.mediumSystemFont(14);
     t.textColor = Color.red();
+    const detalle = widget.addText(String(error).slice(0, 120));
+    detalle.font = Font.systemFont(10);
+    detalle.textColor = Color.gray();
     return widget;
   }
 
@@ -132,8 +135,15 @@ async function main() {
 
   if (config.runsInWidget) {
     Script.setWidget(construirWidget(modo, datos || {}, error));
+  } else if (error) {
+    // Ejecución dentro de Scriptable: se muestra el error completo para diagnosticarlo.
+    const aviso = new Alert();
+    aviso.title = 'No se pudo cargar el estado';
+    aviso.message = String(error);
+    aviso.addCancelAction('Cerrar');
+    await aviso.presentAlert();
   } else {
-    const vista = construirWidget(modo, datos || {}, error);
+    const vista = construirWidget(modo, datos || {}, null);
     await vista.presentSmall();
   }
   Script.complete();

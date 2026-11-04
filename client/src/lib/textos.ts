@@ -75,6 +75,14 @@ export const textos = {
       nombreVacio: 'El nombre no puede estar vacío.',
     },
   },
+  dispositivos: {
+    titulo: 'Widget de estado',
+    descripcion: 'Crea un código para que el widget de la pantalla de inicio del iPhone pueda cambiar de estado sin abrir la app. Se muestra una sola vez: cópialo y pégalo en el script de Scriptable.',
+    nombre: 'Nombre del dispositivo (p. ej. iPhone de Emilio)',
+    crear: 'Crear código',
+    codigoTitulo: 'Tu código (cópialo ahora)',
+    aviso: 'Guárdalo en un lugar seguro. Si lo pierdes, crea otro.',
+  },
   dashboard: {
     titulo: 'Inicio',
     modulos: {
@@ -83,6 +91,7 @@ export const textos = {
       compras: { titulo: 'Compras del mes', descripcion: 'Gastos, gráficos y ahorro mensual' },
     },
     proximamente: 'Esta sección se construye en los siguientes pasos.',
+    widget: 'Widget de estado',
   },
   errorGrupo: {
     titulo: 'No se pudo cargar tu grupo',

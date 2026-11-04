@@ -55,6 +55,11 @@ export default function DashboardScreen() {
           </ThemedView>
         )}
 
+        <Boton
+          titulo={textos.dashboard.widget}
+          onPress={() => router.push('/dispositivos')}
+          secundario
+        />
         <Boton titulo={textos.general.cerrarSesion} onPress={cerrarSesion} secundario />
       </ThemedView>
     </ScrollView>

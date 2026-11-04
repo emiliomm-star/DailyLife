@@ -1,19 +1,15 @@
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 
 import { Boton, Campo, Mensaje } from '@/components/formulario';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
-import {
-  crearEstado,
-  EstadoTrabajo,
-  listarEstados,
-  quitarEstado,
-  renombrarEstado,
-} from '@/lib/go-to-work';
+import { actualizarEstado, crearEstado, EstadoTrabajo, listarEstados, quitarEstado } from '@/lib/go-to-work';
+import { colorDeTexto, ICONOS, PALETA, visualDe } from '@/lib/estados-visual';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
 
 const t = textos.goToWork.estados;
@@ -26,6 +22,8 @@ export default function EstadosScreen() {
   const [nuevo, setNuevo] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [textoEdicion, setTextoEdicion] = useState('');
+  const [iconoEdicion, setIconoEdicion] = useState<string>(ICONOS[0]);
+  const [colorEdicion, setColorEdicion] = useState<string>(PALETA[0]);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<ErrorDescrito | null>(null);
@@ -67,8 +65,9 @@ export default function EstadosScreen() {
       return;
     }
     const orden = Math.max(0, ...estados.map((estado) => estado.orden)) + 1;
+    const visual = visualDe({ nombre, orden });
     operar(async () => {
-      await crearEstado(grupoId, nombre, orden);
+      await crearEstado(grupoId, nombre, orden, visual);
       setNuevo('');
     });
   }
@@ -80,7 +79,7 @@ export default function EstadosScreen() {
       return;
     }
     operar(async () => {
-      await renombrarEstado(estado.id, nombre);
+      await actualizarEstado(estado.id, { nombre, icono: iconoEdicion, color: colorEdicion });
       setEditandoId(null);
     });
   }
@@ -99,8 +98,14 @@ export default function EstadosScreen() {
       <Stack.Screen options={{ title: t.titulo }} />
 
       <ThemedView style={styles.columna}>
-        {estados.map((estado) => (
-          <ThemedView key={estado.id} type="backgroundElement" style={styles.fila}>
+        {estados.map((estado) => {
+          const visual = visualDe(estado);
+          return (
+          <Animated.View key={estado.id} layout={LinearTransition} entering={FadeIn}>
+          <ThemedView type="backgroundElement" style={styles.fila}>
+            <ThemedView style={[styles.punto, { backgroundColor: visual.color }]}>
+              <ThemedText style={styles.puntoIcono}>{visual.icono}</ThemedText>
+            </ThemedView>
             {editandoId === estado.id ? (
               <ThemedView style={styles.flexible}>
                 <Campo
@@ -110,6 +115,33 @@ export default function EstadosScreen() {
                   onSubmitEditing={() => guardarEdicion(estado)}
                   autoFocus
                 />
+                <ThemedText type="small" themeColor="textSecondary">Icono</ThemedText>
+                <ThemedView style={styles.selector}>
+                  {ICONOS.map((icono) => (
+                    <Pressable
+                      key={icono}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: iconoEdicion === icono }}
+                      onPress={() => setIconoEdicion(icono)}
+                      style={[styles.opcion, iconoEdicion === icono && styles.opcionSeleccionada]}>
+                      <ThemedText style={styles.opcionIcono}>{icono}</ThemedText>
+                    </Pressable>
+                  ))}
+                </ThemedView>
+                <ThemedText type="small" themeColor="textSecondary">Color</ThemedText>
+                <ThemedView style={styles.selector}>
+                  {PALETA.map((color) => (
+                    <Pressable
+                      key={color}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Color ${color}`}
+                      accessibilityState={{ selected: colorEdicion === color }}
+                      onPress={() => setColorEdicion(color)}
+                      style={[styles.muestra, { backgroundColor: color }, colorEdicion === color && styles.opcionSeleccionada]}>
+                      <ThemedText style={{ color: colorDeTexto(color) }}>{colorEdicion === color ? '✓' : ''}</ThemedText>
+                    </Pressable>
+                  ))}
+                </ThemedView>
                 <ThemedView style={styles.acciones}>
                   <Pressable accessibilityRole="button" onPress={() => guardarEdicion(estado)} disabled={ocupado}>
                     <ThemedText type="smallBold">{t.guardar}</ThemedText>
@@ -129,6 +161,8 @@ export default function EstadosScreen() {
                   onPress={() => {
                     setEditandoId(estado.id);
                     setTextoEdicion(estado.nombre);
+                    setIconoEdicion(visual.icono);
+                    setColorEdicion(visual.color);
                   }}
                   hitSlop={8}>
                   <ThemedText type="small">{t.editar}</ThemedText>
@@ -141,7 +175,9 @@ export default function EstadosScreen() {
               </>
             )}
           </ThemedView>
-        ))}
+          </Animated.View>
+          );
+        })}
 
         <ThemedText type="small" themeColor="textSecondary">
           {t.quitarAviso}
@@ -191,5 +227,41 @@ const styles = StyleSheet.create({
   },
   peligro: {
     color: '#D32F2F',
+  },
+  punto: {
+    alignItems: 'center',
+    borderRadius: 999,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  puntoIcono: {
+    fontSize: 20,
+  },
+  selector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  opcion: {
+    alignItems: 'center',
+    borderRadius: Spacing.two,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  opcionIcono: {
+    fontSize: 22,
+  },
+  muestra: {
+    alignItems: 'center',
+    borderRadius: 999,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  opcionSeleccionada: {
+    borderWidth: 3,
+    borderColor: '#1A1A1A',
   },
 });

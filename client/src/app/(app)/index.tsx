@@ -6,13 +6,14 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { colorDeTexto } from '@/lib/estados-visual';
 import { textos } from '@/lib/textos';
 
 /** Módulos del dashboard (RF-03). Añadir uno nuevo es añadir una entrada aquí y su carpeta en src/app/(app). */
 const modulos = [
-  { ruta: '/gimnasio', ...textos.dashboard.modulos.gimnasio },
-  { ruta: '/go-to-work', ...textos.dashboard.modulos.goToWork },
-  { ruta: '/compras', ...textos.dashboard.modulos.compras },
+  { ruta: '/gimnasio', icono: '💪', color: '#6BCB77', ...textos.dashboard.modulos.gimnasio },
+  { ruta: '/go-to-work', icono: '🏢', color: '#4D96FF', ...textos.dashboard.modulos.goToWork },
+  { ruta: '/compras', icono: '🛒', color: '#FFB347', ...textos.dashboard.modulos.compras },
 ] as const;
 
 export default function DashboardScreen() {
@@ -34,9 +35,12 @@ export default function DashboardScreen() {
             accessibilityRole="button"
             onPress={() => router.push(modulo.ruta)}
             style={({ pressed }) => [styles.tarjeta, { opacity: pressed ? 0.7 : 1 }]}>
-            <ThemedView type="backgroundElement" style={styles.tarjetaInterior}>
-              <ThemedText type="smallBold">{modulo.titulo}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
+            <ThemedView style={[styles.tarjetaInterior, { backgroundColor: modulo.color }]}>
+              <ThemedText style={styles.iconoModulo}>{modulo.icono}</ThemedText>
+              <ThemedText type="smallBold" style={{ color: colorDeTexto(modulo.color) }}>
+                {modulo.titulo}
+              </ThemedText>
+              <ThemedText type="small" style={{ color: colorDeTexto(modulo.color), opacity: 0.85 }}>
                 {modulo.descripcion}
               </ThemedText>
             </ThemedView>
@@ -84,6 +88,9 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     gap: Spacing.one,
     padding: Spacing.three,
+  },
+  iconoModulo: {
+    fontSize: 30,
   },
   codigo: {
     fontSize: 32,

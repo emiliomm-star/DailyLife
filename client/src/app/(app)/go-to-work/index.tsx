@@ -16,6 +16,8 @@ import {
   registrarEstado,
   sembrarEstadosIniciales,
 } from '@/lib/go-to-work';
+import { EstadoTile } from '@/components/estado-tile';
+import { visualDe } from '@/lib/estados-visual';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
 import { useEstadoConexion, useVersionTabla } from '@/lib/sincronizacion';
 
@@ -164,25 +166,21 @@ export default function GoToWorkScreen() {
           </ThemedText>
         ) : (
           <ThemedView style={styles.rejilla}>
-            {estados.map((estado) => (
-              <Pressable
-                key={estado.id}
-                accessibilityRole="button"
-                accessibilityLabel={estado.nombre}
-                disabled={marcando !== null}
-                onPress={() => marcar(estado)}
-                style={({ pressed }) => [styles.boton, { opacity: pressed || marcando ? 0.6 : 1 }]}>
-                <ThemedView type="backgroundElement" style={styles.botonInterior}>
-                  {marcando === estado.id ? (
-                    <ActivityIndicator />
-                  ) : (
-                    <ThemedText type="smallBold" style={styles.centrado}>
-                      {estado.nombre}
-                    </ThemedText>
-                  )}
-                </ThemedView>
-              </Pressable>
-            ))}
+            {estados.map((estado, indice) => {
+              const visual = visualDe(estado);
+              return (
+                <EstadoTile
+                  key={estado.id}
+                  nombre={estado.nombre}
+                  icono={visual.icono}
+                  color={visual.color}
+                  indice={indice}
+                  cargando={marcando === estado.id}
+                  deshabilitado={marcando !== null}
+                  onPress={() => marcar(estado)}
+                />
+              );
+            })}
           </ThemedView>
         )}
 
@@ -259,20 +257,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-  },
-  boton: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    minHeight: 64,
-    borderRadius: Spacing.three,
-  },
-  botonInterior: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Spacing.three,
-    minHeight: 64,
-    padding: Spacing.two,
   },
   cabeceraHistorial: {
     flexDirection: 'row',

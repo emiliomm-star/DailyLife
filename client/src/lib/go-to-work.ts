@@ -5,6 +5,8 @@ export type EstadoTrabajo = {
   nombre: string;
   orden: number;
   activo: boolean;
+  icono: string | null;
+  color: string | null;
 };
 
 export type RegistroTrabajo = {
@@ -26,7 +28,7 @@ export function limitesDelDia(fecha: Date): { desde: Date; hasta: Date } {
 export async function listarEstados(grupoId: string, incluirInactivos = false): Promise<EstadoTrabajo[]> {
   let consulta = supabase
     .from('estados_trabajo')
-    .select('id, nombre, orden, activo')
+    .select('id, nombre, orden, activo, icono, color')
     .eq('grupo_id', grupoId)
     .order('orden')
     .order('nombre');
@@ -55,17 +57,25 @@ export async function sembrarEstadosIniciales(grupoId: string, nombres: readonly
   if (error) throw error;
 }
 
-export async function crearEstado(grupoId: string, nombre: string, orden: number): Promise<void> {
+export async function crearEstado(
+  grupoId: string,
+  nombre: string,
+  orden: number,
+  visual: { icono: string; color: string },
+): Promise<void> {
   const { error } = await supabase
     .from('estados_trabajo')
-    .insert({ grupo_id: grupoId, nombre: nombre.trim(), orden });
+    .insert({ grupo_id: grupoId, nombre: nombre.trim(), orden, icono: visual.icono, color: visual.color });
   if (error) throw error;
 }
 
-export async function renombrarEstado(estadoId: string, nombre: string): Promise<void> {
+export async function actualizarEstado(
+  estadoId: string,
+  cambios: { nombre: string; icono: string; color: string },
+): Promise<void> {
   const { error } = await supabase
     .from('estados_trabajo')
-    .update({ nombre: nombre.trim() })
+    .update({ nombre: cambios.nombre.trim(), icono: cambios.icono, color: cambios.color })
     .eq('id', estadoId);
   if (error) throw error;
 }

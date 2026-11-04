@@ -7,6 +7,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { EstadoIcono } from '@/components/estado-icono';
 import { colorDeTexto } from '@/lib/estados-visual';
 
 type EstadoTileProps = {
@@ -46,9 +47,7 @@ function EstadoTileBase({ nombre, icono, color, indice, cargando, deshabilitado,
           {cargando ? (
             <ActivityIndicator color={textoColor} />
           ) : (
-            <Text style={styles.icono} accessibilityElementsHidden importantForAccessibility="no">
-              {icono}
-            </Text>
+            <EstadoIcono clave={icono} color={textoColor} tamano={34} />
           )}
           <Text style={[styles.nombre, { color: textoColor }]} numberOfLines={2}>
             {nombre}
@@ -78,9 +77,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 8,
     elevation: 3,
-  },
-  icono: {
-    fontSize: 34,
   },
   nombre: {
     fontSize: 15,

@@ -1,17 +1,58 @@
-/** Paleta de colores vivos para los estados. Los hex tienen contraste suficiente con el texto que llevan encima. */
+import type { ComponentProps } from 'react';
+import type { Ionicons } from '@expo/vector-icons';
+
+export type NombreIcono = ComponentProps<typeof Ionicons>['name'];
+
+/**
+ * Iconos seleccionables. La clave es la que se guarda en la base de datos (máx. 8 caracteres);
+ * el nombre es el icono vectorial de Ionicons. Cada icono aparece una sola vez.
+ */
+export const ICONOS: ReadonlyArray<{ clave: string; nombre: NombreIcono; etiqueta: string }> = [
+  { clave: 'metro', nombre: 'train', etiqueta: 'Metro' },
+  { clave: 'bus', nombre: 'bus', etiqueta: 'Bus' },
+  { clave: 'coche', nombre: 'car', etiqueta: 'Coche' },
+  { clave: 'bici', nombre: 'bicycle', etiqueta: 'Bici' },
+  { clave: 'andar', nombre: 'walk', etiqueta: 'Andar' },
+  { clave: 'trabajo', nombre: 'briefcase', etiqueta: 'Trabajo' },
+  { clave: 'cafe', nombre: 'cafe', etiqueta: 'Café' },
+  { clave: 'comida', nombre: 'restaurant', etiqueta: 'Comida' },
+  { clave: 'salida', nombre: 'log-out', etiqueta: 'Salida' },
+  { clave: 'casa', nombre: 'home', etiqueta: 'Casa' },
+  { clave: 'gym', nombre: 'barbell', etiqueta: 'Gimnasio' },
+  { clave: 'compra', nombre: 'cart', etiqueta: 'Compra' },
+  { clave: 'libro', nombre: 'book', etiqueta: 'Estudio' },
+  { clave: 'dormir', nombre: 'bed', etiqueta: 'Dormir' },
+  { clave: 'sol', nombre: 'sunny', etiqueta: 'Mañana' },
+  { clave: 'luna', nombre: 'moon', etiqueta: 'Noche' },
+  { clave: 'medico', nombre: 'medkit', etiqueta: 'Salud' },
+  { clave: 'musica', nombre: 'musical-notes', etiqueta: 'Música' },
+  { clave: 'estrella', nombre: 'star', etiqueta: 'Destacado' },
+  { clave: 'corazon', nombre: 'heart', etiqueta: 'Favorito' },
+];
+
+/** Paleta de colores vivos para los estados. */
 export const PALETA = ['#FF6B6B', '#FFB347', '#FFD93D', '#6BCB77', '#4D96FF', '#9D7CFF', '#FF8FC7', '#2EC4B6'] as const;
 
-/** Iconos seleccionables (emojis: se ven bien en iOS y en la web, sin cargar librerías). */
-export const ICONOS = ['🚇', '🚌', '🚗', '🏢', '☕', '🍳', '🚪', '🏠', '💪', '🛒', '💼', '🎯', '⭐', '🌙', '📚', '🧘'] as const;
+const NOMBRE_POR_CLAVE = new Map(ICONOS.map((icono) => [icono.clave, icono.nombre]));
 
-const POR_PALABRA: ReadonlyArray<readonly [RegExp, string, string]> = [
-  [/metro/i, '🚇', '#4D96FF'],
-  [/bus/i, '🚌', '#FF6B6B'],
-  [/coche|taxi/i, '🚗', '#9D7CFF'],
-  [/trabaj|llegu/i, '🏢', '#4D96FF'],
-  [/desayun|comida|almuerz|cen/i, '☕', '#FFB347'],
-  [/sal[ií]/i, '🚪', '#FFD93D'],
-  [/casa/i, '🏠', '#6BCB77'],
+/** Nombre del icono vectorial para una clave, o null si la clave no es de la lista (p. ej. un emoji antiguo). */
+export function nombreIcono(clave: string): NombreIcono | null {
+  return NOMBRE_POR_CLAVE.get(clave) ?? null;
+}
+
+// Sugerencias según el nombre del estado: se usan si el estado no tiene icono ni color guardados.
+const SUGERIDOS: ReadonlyArray<readonly [RegExp, string, string]> = [
+  [/metro/i, 'metro', '#4D96FF'],
+  [/bus/i, 'bus', '#FF6B6B'],
+  [/coche|taxi/i, 'coche', '#9D7CFF'],
+  [/bici/i, 'bici', '#2EC4B6'],
+  [/desayun|cafe|café/i, 'cafe', '#FFB347'],
+  [/comida|almuerz|cena/i, 'comida', '#FF8FC7'],
+  [/sal[ií]/i, 'salida', '#FFD93D'],
+  [/trabaj|llegu/i, 'trabajo', '#4D96FF'],
+  [/casa/i, 'casa', '#6BCB77'],
+  [/gym|gimnasio|pesas/i, 'gym', '#FF6B6B'],
+  [/compr/i, 'compra', '#FFB347'],
 ];
 
 export type VisualEstado = { icono: string; color: string };
@@ -23,9 +64,9 @@ export function visualDe(estado: {
   icono?: string | null;
   color?: string | null;
 }): VisualEstado {
-  const sugerido = POR_PALABRA.find(([patron]) => patron.test(estado.nombre));
+  const sugerido = SUGERIDOS.find(([patron]) => patron.test(estado.nombre));
   return {
-    icono: estado.icono ?? sugerido?.[1] ?? '⭐',
+    icono: estado.icono ?? sugerido?.[1] ?? 'estrella',
     color: estado.color ?? sugerido?.[2] ?? PALETA[estado.orden % PALETA.length],
   };
 }

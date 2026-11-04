@@ -10,6 +10,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { actualizarEstado, crearEstado, EstadoTrabajo, listarEstados, quitarEstado } from '@/lib/go-to-work';
 import { colorDeTexto, ICONOS, PALETA, visualDe } from '@/lib/estados-visual';
+import { EstadoIcono } from '@/components/estado-icono';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
 
 const t = textos.goToWork.estados;
@@ -22,7 +23,7 @@ export default function EstadosScreen() {
   const [nuevo, setNuevo] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [textoEdicion, setTextoEdicion] = useState('');
-  const [iconoEdicion, setIconoEdicion] = useState<string>(ICONOS[0]);
+  const [iconoEdicion, setIconoEdicion] = useState<string>(ICONOS[0].clave);
   const [colorEdicion, setColorEdicion] = useState<string>(PALETA[0]);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -104,7 +105,7 @@ export default function EstadosScreen() {
           <Animated.View key={estado.id} layout={LinearTransition} entering={FadeIn}>
           <ThemedView type="backgroundElement" style={styles.fila}>
             <ThemedView style={[styles.punto, { backgroundColor: visual.color }]}>
-              <ThemedText style={styles.puntoIcono}>{visual.icono}</ThemedText>
+              <EstadoIcono clave={visual.icono} color={colorDeTexto(visual.color)} tamano={20} />
             </ThemedView>
             {editandoId === estado.id ? (
               <ThemedView style={styles.flexible}>
@@ -119,12 +120,13 @@ export default function EstadosScreen() {
                 <ThemedView style={styles.selector}>
                   {ICONOS.map((icono) => (
                     <Pressable
-                      key={icono}
+                      key={icono.clave}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: iconoEdicion === icono }}
-                      onPress={() => setIconoEdicion(icono)}
-                      style={[styles.opcion, iconoEdicion === icono && styles.opcionSeleccionada]}>
-                      <ThemedText style={styles.opcionIcono}>{icono}</ThemedText>
+                      accessibilityLabel={icono.etiqueta}
+                      accessibilityState={{ selected: iconoEdicion === icono.clave }}
+                      onPress={() => setIconoEdicion(icono.clave)}
+                      style={[styles.opcion, iconoEdicion === icono.clave && styles.opcionSeleccionada]}>
+                      <EstadoIcono clave={icono.clave} color={iconoEdicion === icono.clave ? '#1A1A1A' : '#60646C'} tamano={22} />
                     </Pressable>
                   ))}
                 </ThemedView>
@@ -249,9 +251,6 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     width: 40,
-  },
-  opcionIcono: {
-    fontSize: 22,
   },
   muestra: {
     alignItems: 'center',

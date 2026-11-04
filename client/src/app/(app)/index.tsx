@@ -1,4 +1,5 @@
 import { router, Stack } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { Boton } from '@/components/formulario';
@@ -11,9 +12,9 @@ import { textos } from '@/lib/textos';
 
 /** Módulos del dashboard (RF-03). Añadir uno nuevo es añadir una entrada aquí y su carpeta en src/app/(app). */
 const modulos = [
-  { ruta: '/gimnasio', icono: '💪', color: '#6BCB77', ...textos.dashboard.modulos.gimnasio },
-  { ruta: '/go-to-work', icono: '🏢', color: '#4D96FF', ...textos.dashboard.modulos.goToWork },
-  { ruta: '/compras', icono: '🛒', color: '#FFB347', ...textos.dashboard.modulos.compras },
+  { ruta: '/gimnasio', icono: 'barbell' as const, color: '#6BCB77', ...textos.dashboard.modulos.gimnasio },
+  { ruta: '/go-to-work', icono: 'briefcase' as const, color: '#4D96FF', ...textos.dashboard.modulos.goToWork },
+  { ruta: '/compras', icono: 'cart' as const, color: '#FFB347', ...textos.dashboard.modulos.compras },
 ] as const;
 
 export default function DashboardScreen() {
@@ -36,7 +37,7 @@ export default function DashboardScreen() {
             onPress={() => router.push(modulo.ruta)}
             style={({ pressed }) => [styles.tarjeta, { opacity: pressed ? 0.7 : 1 }]}>
             <ThemedView style={[styles.tarjetaInterior, { backgroundColor: modulo.color }]}>
-              <ThemedText style={styles.iconoModulo}>{modulo.icono}</ThemedText>
+              <Ionicons name={modulo.icono} size={30} color={colorDeTexto(modulo.color)} />
               <ThemedText type="smallBold" style={{ color: colorDeTexto(modulo.color) }}>
                 {modulo.titulo}
               </ThemedText>

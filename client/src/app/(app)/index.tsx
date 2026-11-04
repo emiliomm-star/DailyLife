@@ -1,68 +1,83 @@
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, Stack } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { Boton } from '@/components/formulario';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { textos } from '@/lib/textos';
 
-/**
- * Pantalla de inicio provisional: muestra el grupo y permite cerrar sesión.
- * El dashboard con los módulos (Gimnasio, Go To Work, Compras) llega en el paso 6.
- */
-export default function InicioScreen() {
+/** Módulos del dashboard (RF-03). Añadir uno nuevo es añadir una entrada aquí y su carpeta en src/app/(app). */
+const modulos = [
+  { ruta: '/gimnasio', ...textos.dashboard.modulos.gimnasio },
+  { ruta: '/go-to-work', ...textos.dashboard.modulos.goToWork },
+  { ruta: '/compras', ...textos.dashboard.modulos.compras },
+] as const;
+
+export default function DashboardScreen() {
   const { grupo, cerrarSesion } = useAuth();
 
   return (
-    <ThemedView style={styles.contenedor}>
-      <SafeAreaView style={styles.interior} edges={['top']}>
-        <ThemedView style={styles.columna}>
-          <ThemedText type="subtitle">
-            {textos.inicio.bienvenida}
-            {grupo ? `, ${grupo.nombre}` : ''}
-          </ThemedText>
+    <ScrollView contentContainerStyle={styles.contenido}>
+      <Stack.Screen options={{ title: textos.dashboard.titulo }} />
 
-          {grupo && (
-            <ThemedView type="backgroundElement" style={styles.tarjeta}>
-              <ThemedText type="smallBold">{textos.inicio.codigoInvitacion}</ThemedText>
-              <ThemedText type="title" selectable style={styles.codigo}>
-                {grupo.codigo_invitacion}
-              </ThemedText>
+      <ThemedView style={styles.columna}>
+        <ThemedText type="subtitle">
+          {textos.inicio.bienvenida}
+          {grupo ? `, ${grupo.nombre}` : ''}
+        </ThemedText>
+
+        {modulos.map((modulo) => (
+          <Pressable
+            key={modulo.ruta}
+            accessibilityRole="button"
+            onPress={() => router.push(modulo.ruta)}
+            style={({ pressed }) => [styles.tarjeta, { opacity: pressed ? 0.7 : 1 }]}>
+            <ThemedView type="backgroundElement" style={styles.tarjetaInterior}>
+              <ThemedText type="smallBold">{modulo.titulo}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                {textos.inicio.codigoAyuda}
+                {modulo.descripcion}
               </ThemedText>
             </ThemedView>
-          )}
+          </Pressable>
+        ))}
 
-          <Boton titulo={textos.general.cerrarSesion} onPress={cerrarSesion} secundario />
-        </ThemedView>
-      </SafeAreaView>
-    </ThemedView>
+        {grupo && (
+          <ThemedView type="backgroundElement" style={styles.tarjetaInterior}>
+            <ThemedText type="smallBold">{textos.inicio.codigoInvitacion}</ThemedText>
+            <ThemedText type="title" selectable style={styles.codigo}>
+              {grupo.codigo_invitacion}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {textos.inicio.codigoAyuda}
+            </ThemedText>
+          </ThemedView>
+        )}
+
+        <Boton titulo={textos.general.cerrarSesion} onPress={cerrarSesion} secundario />
+      </ThemedView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  contenedor: {
-    flex: 1,
-  },
-  interior: {
-    flex: 1,
+  contenido: {
+    paddingVertical: Spacing.four,
+    paddingHorizontal: Spacing.three,
   },
   columna: {
     alignSelf: 'center',
     gap: Spacing.three,
     maxWidth: MaxContentWidth,
-    paddingBottom: BottomTabInset,
-    paddingHorizontal: Spacing.three,
-    // En web, la barra de pestañas va arriba y tapa el contenido: se deja hueco para ella.
-    paddingTop: Platform.OS === 'web' ? Spacing.six + Spacing.two : Spacing.four,
     width: '100%',
   },
   tarjeta: {
     borderRadius: Spacing.three,
-    gap: Spacing.two,
+  },
+  tarjetaInterior: {
+    borderRadius: Spacing.three,
+    gap: Spacing.one,
     padding: Spacing.three,
   },
   codigo: {

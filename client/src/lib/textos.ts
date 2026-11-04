@@ -44,6 +44,15 @@ export const textos = {
     codigoInvitacion: 'Código de invitación',
     codigoAyuda: 'Compártelo con la otra persona para que entre en el grupo.',
   },
+  dashboard: {
+    titulo: 'Inicio',
+    modulos: {
+      gimnasio: { titulo: 'Gimnasio', descripcion: 'Rutinas de musculación' },
+      goToWork: { titulo: 'Go To Work', descripcion: 'Estados del trabajo del día' },
+      compras: { titulo: 'Compras del mes', descripcion: 'Gastos, gráficos y ahorro mensual' },
+    },
+    proximamente: 'Esta sección se construye en los siguientes pasos.',
+  },
   errorGrupo: {
     titulo: 'No se pudo cargar tu grupo',
     descripcion: 'Comprueba tu conexión e inténtalo de nuevo.',

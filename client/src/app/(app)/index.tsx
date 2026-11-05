@@ -8,6 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { colorDeTexto } from '@/lib/estados-visual';
+import { TarjetaEstadoActual } from '@/components/tarjeta-estado-actual';
 import { textos } from '@/lib/textos';
 
 /** Módulos del dashboard (RF-03). Añadir uno nuevo es añadir una entrada aquí y su carpeta en src/app/(app). */
@@ -29,6 +30,8 @@ export default function DashboardScreen() {
           {textos.inicio.bienvenida}
           {grupo ? `, ${grupo.nombre}` : ''}
         </ThemedText>
+
+        <TarjetaEstadoActual />
 
         {modulos.map((modulo) => (
           <Pressable

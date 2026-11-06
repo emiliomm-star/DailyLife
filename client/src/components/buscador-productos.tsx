@@ -7,7 +7,7 @@ import { Boton, Campo, Mensaje } from '@/components/formulario';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import type { DatosProducto } from '@/lib/compras';
+import { type DatosProducto, parsearPrecio } from '@/lib/compras';
 import { buscarEnCatalogo, CatalogoNoDisponible, type ProductoCatalogo } from '@/lib/open-food-facts';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
 
@@ -30,8 +30,7 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
   const [resultados, setResultados] = useState<ProductoCatalogo[]>([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<ErrorDescrito | null>(null);
-  const [elegido, setElegido] = useState<ProductoCatalogo | 'manual' | null>(null);
-  const [nombreManual, setNombreManual] = useState('');
+  const [elegido, setElegido] = useState<ProductoCatalogo | null>(null);
   const [precio, setPrecio] = useState('');
   const [guardando, setGuardando] = useState(false);
 
@@ -77,42 +76,26 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
     setResultados([]);
     setElegido(null);
     setPrecio('');
-    setNombreManual('');
     setError(null);
     onCerrar();
   }
 
-  function precioNumero(): number | null | 'error' {
-    const texto = precio.trim().replace(',', '.');
-    if (!texto) return null;
-    const valor = Number(texto);
-    return Number.isFinite(valor) && valor >= 0 ? valor : 'error';
-  }
-
   async function confirmar() {
     if (!elegido) return;
-    const valor = precioNumero();
+    const valor = parsearPrecio(precio);
     if (valor === 'error') {
       setError({ texto: t.precioNoValido, detalle: `Precio escrito: ${precio}` });
       return;
     }
-    const datos: DatosProducto =
-      elegido === 'manual'
-        ? { nombre: nombreManual.trim(), precio: valor }
-        : {
-            nombre: elegido.nombre,
-            marca: elegido.marca,
-            imagenUrl: elegido.imagen,
-            codigoBarras: /^[0-9]{6,14}$/.test(elegido.codigo) ? elegido.codigo : null,
-            precio: valor,
-          };
-    if (!datos.nombre) {
-      setError({ texto: t.nombreVacio, detalle: 'Nombre vacío' });
-      return;
-    }
     setGuardando(true);
     try {
-      await onElegir(datos);
+      await onElegir({
+        nombre: elegido.nombre,
+        marca: elegido.marca,
+        imagenUrl: elegido.imagen,
+        codigoBarras: /^[0-9]{6,14}$/.test(elegido.codigo) ? elegido.codigo : null,
+        precio: valor,
+      });
       cerrar();
     } catch (e) {
       setError(describirError(e));
@@ -133,12 +116,8 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
 
         {elegido ? (
           <ThemedView style={styles.panel}>
-            <ThemedText type="smallBold">
-              {elegido === 'manual' ? t.sinCatalogo : (elegido as ProductoCatalogo).nombre}
-            </ThemedText>
-            {elegido === 'manual' && (
-              <Campo etiqueta={t.nombre} value={nombreManual} onChangeText={setNombreManual} autoFocus />
-            )}
+            <ThemedText type="smallBold">{elegido.nombre}</ThemedText>
+            {elegido.marca && <ThemedText type="small" themeColor="textSecondary">{elegido.marca}</ThemedText>}
             <Campo
               etiqueta={t.precio}
               value={precio}
@@ -174,17 +153,7 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
               windowSize={7}
               removeClippedSubviews
               ListHeaderComponent={
-                termino.trim().length >= 3 ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => {
-                      setNombreManual(termino.trim());
-                      setElegido('manual');
-                    }}
-                    style={styles.fila}>
-                    <ThemedText type="smallBold">{t.anadirSinCatalogo(termino.trim())}</ThemedText>
-                  </Pressable>
-                ) : undefined
+                undefined
               }
               ListEmptyComponent={
                 termino.trim().length >= 3 && !cargando && !error ? (

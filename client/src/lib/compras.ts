@@ -190,3 +190,11 @@ export async function reiniciarCategoria(grupoId: string, categoriaId: string): 
     .eq('comprado', true);
   if (error) throw error;
 }
+
+/** Lee un precio escrito (acepta coma o punto). Vacío → null (es opcional). Inválido → 'error'. */
+export function parsearPrecio(texto: string): number | null | 'error' {
+  const limpio = texto.trim().replace(',', '.');
+  if (!limpio) return null;
+  const valor = Number(limpio);
+  return Number.isFinite(valor) && valor >= 0 ? valor : 'error';
+}

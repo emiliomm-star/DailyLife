@@ -18,6 +18,7 @@ import {
   marcarComprado,
   marcarPendiente,
   obtenerCategoria,
+  parsearPrecio,
   Producto,
   quitarProducto,
   reiniciarCategoria,
@@ -42,6 +43,10 @@ export default function CategoriaScreen() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState(true);
   const [buscando, setBuscando] = useState(false);
+  const [nombrePropio, setNombrePropio] = useState('');
+  const [precioPropio, setPrecioPropio] = useState('');
+  const [guardandoPropio, setGuardandoPropio] = useState(false);
+  const [errorPropio, setErrorPropio] = useState<ErrorDescrito | null>(null);
   const [importe, setImporte] = useState('');
   const [ocupadoId, setOcupadoId] = useState<string | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
@@ -101,6 +106,32 @@ export default function CategoriaScreen() {
     if (!grupoId || !categoriaId) return;
     await crearProducto(grupoId, categoriaId, datos);
     await cargar();
+  }
+
+  /** Producto propio: solo nombre obligatorio; precio opcional. */
+  async function anadirPropio() {
+    if (!grupoId || !categoriaId) return;
+    const nombre = nombrePropio.trim();
+    if (!nombre) {
+      setErrorPropio({ texto: textos.propio.nombreVacio, detalle: 'Nombre vacío' });
+      return;
+    }
+    const precio = parsearPrecio(precioPropio);
+    if (precio === 'error') {
+      setErrorPropio({ texto: textos.propio.precioNoValido, detalle: `Precio escrito: ${precioPropio}` });
+      return;
+    }
+    setErrorPropio(null);
+    setGuardandoPropio(true);
+    try {
+      await anadirProducto({ nombre, precio });
+      setNombrePropio('');
+      setPrecioPropio('');
+    } catch (e) {
+      setErrorPropio(describirError(e));
+    } finally {
+      setGuardandoPropio(false);
+    }
   }
 
   /** Lee el importe escrito (acepta coma o punto). Devuelve null si no hay importe válido. */
@@ -191,7 +222,32 @@ export default function CategoriaScreen() {
           stickySectionHeadersEnabled={false}
           ListHeaderComponent={
             <View style={styles.columna}>
-              <Boton titulo={t.anadir} onPress={() => setBuscando(true)} colorFondo={color} />
+              <View style={styles.bloque}>
+                <ThemedText type="smallBold">{textos.propio.titulo}</ThemedText>
+                <Campo
+                  etiqueta={textos.propio.nombre}
+                  value={nombrePropio}
+                  onChangeText={setNombrePropio}
+                  onSubmitEditing={anadirPropio}
+                  returnKeyType="done"
+                />
+                <Campo
+                  etiqueta={textos.propio.precio}
+                  value={precioPropio}
+                  onChangeText={setPrecioPropio}
+                  keyboardType="decimal-pad"
+                  placeholder="0,00"
+                />
+                {errorPropio && <Mensaje texto={errorPropio.texto} detalle={errorPropio.detalle} />}
+                <Boton
+                  titulo={textos.propio.anadir}
+                  onPress={anadirPropio}
+                  cargando={guardandoPropio}
+                  colorFondo={color}
+                />
+              </View>
+
+              <Boton titulo={textos.buscador.buscarOff} onPress={() => setBuscando(true)} secundario />
               <BuscadorProductos
                 visible={buscando}
                 color={color}
@@ -334,6 +390,10 @@ const styles = StyleSheet.create({
   columna: {
     gap: Spacing.two,
     marginBottom: Spacing.three,
+  },
+  bloque: {
+    gap: Spacing.two,
+    marginBottom: Spacing.two,
   },
   espacio: {
     marginTop: Spacing.four,

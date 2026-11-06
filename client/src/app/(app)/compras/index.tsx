@@ -183,15 +183,15 @@ export default function ComprasScreen() {
                   <View style={styles.icono}>
                     <EstadoIcono clave={visual.icono} color={textoColor} tamano={28} />
                   </View>
-                  <ThemedView style={styles.textos}>
+                  <View style={styles.textos}>
                     <ThemedText style={[styles.nombre, { color: textoColor }]}>{categoria.nombre}</ThemedText>
                     <ThemedText style={[styles.cuenta, { color: textoColor }]}>
                       {`${t.pendientes(cuenta.pendientes)} · ${t.comprados(cuenta.comprados)}`}
                     </ThemedText>
-                  </ThemedView>
+                  </View>
                 </Pressable>
 
-                <ThemedView style={styles.acciones}>
+                <View style={styles.acciones}>
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => {
@@ -206,7 +206,7 @@ export default function ComprasScreen() {
                       {confirmandoId === categoria.id ? t.confirmarQuitar : t.quitar}
                     </ThemedText>
                   </Pressable>
-                </ThemedView>
+                </View>
               </Animated.View>
             );
           })

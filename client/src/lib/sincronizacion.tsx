@@ -16,6 +16,8 @@ export const TABLAS_SINCRONIZADAS = [
   'compras',
   'gastos',
   'ingresos',
+  'rutinas',
+  'ejercicios_rutina',
 ] as const;
 export type TablaSincronizada = (typeof TABLAS_SINCRONIZADAS)[number];
 

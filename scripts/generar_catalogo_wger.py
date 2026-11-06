@@ -9,16 +9,35 @@ import json
 import urllib.request
 from pathlib import Path
 
-URL = 'https://wger.de/api/v2/exerciseinfo/?format=json&limit=1000&language=2'
+URL = 'https://wger.de/api/v2/exerciseinfo/?format=json&limit=1000'
 SALIDA = Path(__file__).resolve().parent.parent / 'client' / 'src' / 'data' / 'ejercicios-wger.json'
-IDIOMA_ESPANOL = 2
+# Idiomas de wger: 2 = inglés, 4 = español.
+IDIOMA_ESPANOL = 4
+IDIOMA_INGLES = 2
+
+# Las categorías vienen en inglés desde la API.
+CATEGORIAS_ES = {
+    'Abs': 'Abdominales',
+    'Arms': 'Brazos',
+    'Back': 'Espalda',
+    'Calves': 'Gemelos',
+    'Cardio': 'Cardio',
+    'Chest': 'Pecho',
+    'Legs': 'Piernas',
+    'Shoulders': 'Hombros',
+}
+
+
+def nombre_en_idioma(ejercicio, idioma):
+    for traduccion in ejercicio.get('translations', []):
+        if traduccion.get('language') == idioma and traduccion.get('name'):
+            return traduccion['name'].strip()
+    return None
 
 
 def nombre_espanol(ejercicio):
-    for traduccion in ejercicio.get('translations', []):
-        if traduccion.get('language') == IDIOMA_ESPANOL and traduccion.get('name'):
-            return traduccion['name'].strip()
-    return None
+    # Solo español. Si wger no tiene traducción, el ejercicio se usa con el nombre en inglés.
+    return nombre_en_idioma(ejercicio, IDIOMA_ESPANOL) or nombre_en_idioma(ejercicio, IDIOMA_INGLES)
 
 
 def miniatura(imagen):
@@ -39,11 +58,15 @@ def main():
         datos = json.load(respuesta)
 
     catalogo = []
+    sin_espanol = 0
     for ejercicio in datos['results']:
         nombre = nombre_espanol(ejercicio)
         if not nombre:
             continue
-        categoria = (ejercicio.get('category') or {}).get('name')
+        if nombre_en_idioma(ejercicio, IDIOMA_ESPANOL) is None:
+            sin_espanol += 1
+        categoria_en = (ejercicio.get('category') or {}).get('name')
+        categoria = CATEGORIAS_ES.get(categoria_en, categoria_en)
         catalogo.append({
             'id': ejercicio['id'],
             'n': nombre,
@@ -56,7 +79,7 @@ def main():
     catalogo.sort(key=lambda e: e['n'].lower())
     SALIDA.parent.mkdir(parents=True, exist_ok=True)
     SALIDA.write_text(json.dumps(catalogo, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
-    print(f'{len(catalogo)} ejercicios -> {SALIDA} ({SALIDA.stat().st_size} bytes)')
+    print(f'{len(catalogo)} ejercicios -> {SALIDA} ({SALIDA.stat().st_size} bytes); sin traducción al español: {sin_espanol}')
 
 
 if __name__ == '__main__':

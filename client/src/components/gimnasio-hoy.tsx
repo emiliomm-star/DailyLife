@@ -37,6 +37,7 @@ export function GimnasioHoy() {
   const [cargando, setCargando] = useState(true);
   const [ocupadoId, setOcupadoId] = useState<string | null>(null);
   const [error, setError] = useState<ErrorDescrito | null>(null);
+  const [resumen, setResumen] = useState<Record<string, { rutina: string | null; hechos: number; total: number }>>({});
 
   const hoy = useMemo(() => new Date(), []);
   const dia = diaSemana(hoy);
@@ -122,6 +123,38 @@ export function GimnasioHoy() {
     }
   }
 
+  // Estado de hoy de todos los miembros: rutina, ejercicios hechos y total (se actualiza en tiempo real).
+  useEffect(() => {
+    if (!grupoId || miembros.length === 0) return;
+    let activo = true;
+    (async () => {
+      const cacheEjercicios = new Map<string, EjercicioRutina[]>();
+      const siguiente: Record<string, { rutina: string | null; hechos: number; total: number }> = {};
+      for (const miembro of miembros) {
+        const entrada = plan.find((p) => p.user_id === miembro.user_id && p.dia === dia);
+        const rutinaDeHoy = entrada ? rutinas.find((r) => r.id === entrada.rutina_id) : undefined;
+        if (!rutinaDeHoy) {
+          siguiente[miembro.user_id] = { rutina: null, hechos: 0, total: 0 };
+          continue;
+        }
+        if (!cacheEjercicios.has(rutinaDeHoy.id)) {
+          cacheEjercicios.set(rutinaDeHoy.id, await listarEjercicios(rutinaDeHoy.id));
+        }
+        const ejerciciosRutina = cacheEjercicios.get(rutinaDeHoy.id) ?? [];
+        const marcadas = await listarMarcas(grupoId, miembro.user_id, fecha);
+        siguiente[miembro.user_id] = {
+          rutina: rutinaDeHoy.nombre,
+          hechos: ejerciciosRutina.filter((e) => marcadas.has(e.id)).length,
+          total: ejerciciosRutina.length,
+        };
+      }
+      if (activo) setResumen(siguiente);
+    })().catch((e) => activo && setError(describirError(e)));
+    return () => {
+      activo = false;
+    };
+  }, [grupoId, miembros, plan, rutinas, dia, fecha, vMarcas, vEjercicios]);
+
   if (cargando) return <ActivityIndicator style={styles.espacio} />;
 
   const opcionesPersonas = miembros.map((m) => ({
@@ -145,6 +178,40 @@ export function GimnasioHoy() {
       <ThemedText type="smallBold" style={styles.fecha}>
         {fechaTexto}
       </ThemedText>
+
+      {miembros.length > 0 && (
+        <ThemedView type="backgroundElement" style={styles.tarjeta}>
+          <ThemedText type="smallBold">{t.resumenHoy}</ThemedText>
+          {miembros.map((miembro) => {
+            const estado = resumen[miembro.user_id];
+            const esTu = miembro.user_id === usuarioId;
+            const porcentajeMiembro = estado && estado.total ? Math.round((estado.hechos / estado.total) * 100) : 0;
+            return (
+              <Pressable
+                key={miembro.user_id}
+                accessibilityRole="button"
+                onPress={() => setSeleccion(miembro.user_id)}
+                style={styles.resumenFila}>
+                <View style={styles.resumenCabecera}>
+                  <ThemedText type="small" style={styles.resumenNombre}>
+                    {esTu ? `${nombreDe(miembro)} (tú)` : nombreDe(miembro)}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {!estado || !estado.rutina
+                      ? t.descanso
+                      : `${estado.rutina} · ${estado.hechos}/${estado.total}`}
+                  </ThemedText>
+                </View>
+                {estado?.rutina && (
+                  <View style={styles.barraFondo}>
+                    <View style={[styles.barra, { width: `${porcentajeMiembro}%` }]} />
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
+        </ThemedView>
+      )}
 
       {!rutinaId || !rutina ? (
         <ThemedView type="backgroundElement" style={styles.tarjeta}>
@@ -237,6 +304,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLOR,
     borderRadius: 999,
     height: '100%',
+  },
+  resumenFila: {
+    gap: 4,
+    paddingVertical: 4,
+  },
+  resumenCabecera: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  resumenNombre: {
+    fontWeight: '700',
   },
   fila: {
     borderRadius: 14,

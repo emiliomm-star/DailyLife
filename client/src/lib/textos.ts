@@ -119,6 +119,7 @@ export const textos = {
     hoyDescanso: 'Hoy toca descanso. Disfrútalo.',
     hoyRutinaVacia: 'Esta rutina aún no tiene ejercicios. Añádelos en Biblioteca.',
     progreso: (hechos: number, total: number) => `${hechos} de ${total} hechos`,
+    resumenHoy: 'Hoy en el grupo',
     quienEres: '¿Quién entrena?',
     tuNombre: 'Tu nombre',
     guardarNombre: 'Guardar nombre',

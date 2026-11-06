@@ -20,7 +20,7 @@ import {
   resumenPorCategoria,
   sembrarCategoriasIniciales,
 } from '@/lib/compras';
-import { colorDeTexto, visualCategoria, visualDe } from '@/lib/estados-visual';
+import { colorDeTexto, PALETA, visualCategoria, visualDe } from '@/lib/estados-visual';
 import { useVersionTabla } from '@/lib/sincronizacion';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
 
@@ -221,7 +221,7 @@ export default function ComprasScreen() {
           onSubmitEditing={anadir}
           returnKeyType="done"
         />
-        <Boton titulo={t.anadir} onPress={anadir} cargando={ocupado} />
+        <Boton titulo={t.anadir} onPress={anadir} cargando={ocupado} colorFondo={PALETA[4]} />
 
         {error && <Mensaje texto={error.texto} detalle={error.detalle} />}
       </ThemedView>

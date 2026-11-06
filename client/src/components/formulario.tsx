@@ -13,6 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { colorDeTexto } from '@/lib/estados-visual';
 
 type CampoProps = TextInputProps & {
   etiqueta: string;
@@ -45,12 +46,18 @@ type BotonProps = {
   onPress: () => void;
   cargando?: boolean;
   secundario?: boolean;
+  /** Color de fondo propio (p. ej. el de un módulo). El texto se elige para que se lea bien sobre él. */
+  colorFondo?: string;
 };
 
-export function Boton({ titulo, onPress, cargando = false, secundario = false }: BotonProps) {
+export function Boton({ titulo, onPress, cargando = false, secundario = false, colorFondo }: BotonProps) {
   const theme = useTheme();
-  const fondo = secundario ? theme.backgroundElement : theme.text;
-  const color = secundario ? theme.text : theme.background;
+  const fondo = colorFondo ?? (secundario ? theme.backgroundElement : theme.text);
+  const color = colorFondo
+    ? colorDeTexto(colorFondo)
+    : secundario
+      ? theme.text
+      : theme.background;
 
   return (
     <Pressable

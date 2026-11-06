@@ -23,10 +23,28 @@ type RespuestaOff = {
 
 const URL_BUSQUEDA = 'https://world.openfoodfacts.org/cgi/search.pl';
 
+/** Error propio para que la interfaz muestre un mensaje claro en vez del código HTTP. */
+export class CatalogoNoDisponible extends Error {
+  constructor(public readonly estado: number) {
+    super(`Open Food Facts respondió ${estado}`);
+    this.name = 'CatalogoNoDisponible';
+  }
+}
+
+const MINIMO_LETRAS = 3;
+const REINTENTOS = 2;
+/** Resultados ya pedidos en esta sesión: escribir, borrar y volver a escribir no vuelve a consultar. */
+const cache = new Map<string, ProductoCatalogo[]>();
+
+const esperar = (ms: number) => new Promise<void>((resolver) => setTimeout(resolver, ms));
+
 /** Busca productos por texto. Cancelable con AbortSignal para no mostrar resultados antiguos. */
 export async function buscarEnCatalogo(termino: string, senal?: AbortSignal): Promise<ProductoCatalogo[]> {
-  const texto = termino.trim();
-  if (texto.length < 2) return [];
+  const texto = termino.trim().toLowerCase();
+  if (texto.length < MINIMO_LETRAS) return [];
+
+  const enCache = cache.get(texto);
+  if (enCache) return enCache;
 
   const params = new URLSearchParams({
     search_terms: texto,
@@ -38,8 +56,14 @@ export async function buscarEnCatalogo(termino: string, senal?: AbortSignal): Pr
     lc: 'es',
   });
 
-  const respuesta = await fetch(`${URL_BUSQUEDA}?${params.toString()}`, { signal: senal });
-  if (!respuesta.ok) throw new Error(`Open Food Facts respondió ${respuesta.status}`);
+  let respuesta: Response | null = null;
+  for (let intento = 0; intento <= REINTENTOS; intento++) {
+    respuesta = await fetch(`${URL_BUSQUEDA}?${params.toString()}`, { signal: senal });
+    // 503 y 429 suelen ser saturación temporal: se reintenta con una pausa creciente.
+    if (respuesta.status !== 503 && respuesta.status !== 429) break;
+    if (intento < REINTENTOS) await esperar(1000 * (intento + 1));
+  }
+  if (!respuesta || !respuesta.ok) throw new CatalogoNoDisponible(respuesta?.status ?? 0);
   const json = (await respuesta.json()) as RespuestaOff;
 
   const resultados: ProductoCatalogo[] = [];
@@ -54,5 +78,6 @@ export async function buscarEnCatalogo(termino: string, senal?: AbortSignal): Pr
       cantidad: p.quantity?.trim() || null,
     });
   }
+  cache.set(texto, resultados);
   return resultados;
 }

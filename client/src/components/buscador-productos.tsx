@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import type { DatosProducto } from '@/lib/compras';
-import { buscarEnCatalogo, type ProductoCatalogo } from '@/lib/open-food-facts';
+import { buscarEnCatalogo, CatalogoNoDisponible, type ProductoCatalogo } from '@/lib/open-food-facts';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
 
 const t = textos.buscador;
@@ -39,7 +39,7 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
   useEffect(() => {
     if (!visible) return;
     const texto = termino.trim();
-    if (texto.length < 2) {
+    if (texto.length < 3) {
       setResultados([]);
       setError(null);
       setCargando(false);
@@ -56,12 +56,16 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
         .catch((e) => {
           if (controlador.signal.aborted) return;
           setResultados([]);
-          setError(describirError(e));
+          setError(
+            e instanceof CatalogoNoDisponible
+              ? { texto: t.catalogoOcupado, detalle: e.message }
+              : describirError(e),
+          );
         })
         .finally(() => {
           if (!controlador.signal.aborted) setCargando(false);
         });
-    }, 350);
+    }, 600);
     return () => {
       clearTimeout(temporizador);
       controlador.abort();
@@ -170,7 +174,7 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
               windowSize={7}
               removeClippedSubviews
               ListHeaderComponent={
-                termino.trim().length >= 2 ? (
+                termino.trim().length >= 3 ? (
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => {
@@ -183,7 +187,7 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
                 ) : undefined
               }
               ListEmptyComponent={
-                termino.trim().length >= 2 && !cargando && !error ? (
+                termino.trim().length >= 3 && !cargando && !error ? (
                   <ThemedText type="small" themeColor="textSecondary" style={styles.centrado}>
                     {t.sinResultados}
                   </ThemedText>

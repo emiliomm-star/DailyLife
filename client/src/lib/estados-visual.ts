@@ -28,6 +28,10 @@ export const ICONOS: ReadonlyArray<{ clave: string; nombre: NombreIcono; etiquet
   { clave: 'musica', nombre: 'musical-notes', etiqueta: 'Música' },
   { clave: 'estrella', nombre: 'star', etiqueta: 'Destacado' },
   { clave: 'corazon', nombre: 'heart', etiqueta: 'Favorito' },
+  { clave: 'ropa', nombre: 'shirt', etiqueta: 'Ropa' },
+  { clave: 'tech', nombre: 'desktop', etiqueta: 'Tecnología' },
+  { clave: 'mascota', nombre: 'paw', etiqueta: 'Mascota' },
+  { clave: 'regalo', nombre: 'gift', etiqueta: 'Regalo' },
 ];
 
 /** Paleta de colores vivos para los estados. */
@@ -79,4 +83,26 @@ export function colorDeTexto(hex: string): string {
   const b = n & 255;
   const luminancia = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminancia > 0.62 ? '#1A1A1A' : '#FFFFFF';
+}
+
+// Sugerencias para las categorías de compra según su nombre.
+const SUGERIDOS_CATEGORIA: ReadonlyArray<readonly [RegExp, string, string]> = [
+  [/super|aliment|compra/i, 'compra', '#4D96FF'],
+  [/transporte|gasolina|coche/i, 'coche', '#FFB347'],
+  [/casa|hogar|alquiler|luz|agua|gas/i, 'casa', '#6BCB77'],
+  [/salud|farmacia|medic/i, 'medico', '#FF6B6B'],
+  [/ocio|cine|salida/i, 'musica', '#9D7CFF'],
+  [/ropa/i, 'ropa', '#FF8FC7'],
+  [/tecno|movil|móvil|tech/i, 'tech', '#2EC4B6'],
+  [/mascota/i, 'mascota', '#FFD93D'],
+  [/regalo/i, 'regalo', '#FF6B6B'],
+];
+
+/** Icono y color sugeridos para una categoría nueva, según su nombre. */
+export function visualCategoria(nombre: string, orden: number): VisualEstado {
+  const sugerido = SUGERIDOS_CATEGORIA.find(([patron]) => patron.test(nombre));
+  return {
+    icono: sugerido?.[1] ?? 'estrella',
+    color: sugerido?.[2] ?? PALETA[orden % PALETA.length],
+  };
 }

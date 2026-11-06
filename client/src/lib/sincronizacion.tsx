@@ -8,7 +8,15 @@ import { supabase } from '@/lib/supabase';
  * Tablas del grupo que se sincronizan en tiempo real con todos los miembros.
  * Al añadir un módulo nuevo: añade aquí su tabla y, en su migración, añádela a la publicación supabase_realtime.
  */
-export const TABLAS_SINCRONIZADAS = ['registros_trabajo', 'estados_trabajo'] as const;
+export const TABLAS_SINCRONIZADAS = [
+  'registros_trabajo',
+  'estados_trabajo',
+  'categorias',
+  'productos',
+  'compras',
+  'gastos',
+  'ingresos',
+] as const;
 export type TablaSincronizada = (typeof TABLAS_SINCRONIZADAS)[number];
 
 type Versiones = Record<TablaSincronizada, number>;

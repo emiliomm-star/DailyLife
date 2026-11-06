@@ -83,6 +83,22 @@ export const textos = {
     codigoTitulo: 'Tu código (cópialo ahora)',
     aviso: 'Guárdalo en un lugar seguro. Si lo pierdes, crea otro.',
   },
+  productos: {
+    pendientes: 'Pendientes',
+    comprados: 'Comprados',
+    nuevo: 'Nombre del producto',
+    anadir: 'Añadir producto',
+    importe: 'Importe (opcional)',
+    importeAyuda: 'Escribe el importe antes de tocar un producto para registrarlo como gasto.',
+    vacioPendientes: 'No hay productos pendientes. ¡Lista completa!',
+    vacioComprados: 'Aún no has comprado nada en esta categoría.',
+    quitar: 'Quitar',
+    confirmarQuitar: '¿Seguro?',
+    reiniciar: 'Volver todo a pendiente',
+    confirmarReiniciar: 'Pulsa otra vez para confirmar',
+    nombreVacio: 'El nombre no puede estar vacío.',
+    sinCategoria: 'Esta categoría ya no existe.',
+  },
   compras: {
     titulo: 'Compras del mes',
     categorias: 'Categorías',
@@ -130,6 +146,8 @@ const mensajesConocidos: ReadonlyArray<readonly [string, string]> = [
   ['Email not confirmed', textos.login.emailNoConfirmado],
   ['already registered', textos.registro.emailEnUso],
   ['Código de invitación no válido', textos.grupo.codigoNoValido],
+  ['productos_grupo_id_categoria_id_nombre_key', 'Ya existe un producto con ese nombre en esta categoría.'],
+  ['Producto no encontrado', 'Ese producto ya no existe.'],
 ];
 
 /**

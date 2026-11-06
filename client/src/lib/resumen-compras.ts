@@ -3,7 +3,13 @@ import { supabase } from '@/lib/supabase';
 /** Mes de calendario. mes va de 0 (enero) a 11 (diciembre). */
 export type Mes = { anio: number; mes: number };
 
-export type GastoFila = { categoria_id: string; importe: number; fecha: string };
+export type GastoFila = {
+  id: string;
+  categoria_id: string;
+  importe: number;
+  fecha: string;
+  descripcion: string | null;
+};
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -29,12 +35,18 @@ export async function cargarGastos(grupoId: string, desde: Mes, hasta: Mes): Pro
   const siguienteAlHasta = desplazarMes(hasta, 1);
   const { data, error } = await supabase
     .from('gastos')
-    .select('categoria_id, importe, fecha')
+    .select('id, categoria_id, importe, fecha, descripcion')
     .eq('grupo_id', grupoId)
     .gte('fecha', primerDiaISO(desde))
     .lt('fecha', primerDiaISO(siguienteAlHasta));
   if (error) throw error;
-  return (data ?? []).map((f) => ({ categoria_id: f.categoria_id, importe: Number(f.importe), fecha: f.fecha }));
+  return (data ?? []).map((f) => ({
+    id: f.id,
+    categoria_id: f.categoria_id,
+    importe: Number(f.importe),
+    fecha: f.fecha,
+    descripcion: f.descripcion,
+  }));
 }
 
 /** Ingresos del grupo por mes: mapa 'YYYY-MM' → importe. */
@@ -104,4 +116,24 @@ export function ahorroPorMes(
     salida.push({ mes, ingresos: ing, gastos: g, ahorro: ing - g });
   }
   return salida;
+}
+
+/** Registra un gasto a mano. La fecha va en formato 'YYYY-MM-DD'. */
+export async function crearGasto(
+  grupoId: string,
+  datos: { fecha: string; importe: number; categoriaId: string; descripcion: string | null },
+): Promise<void> {
+  const { error } = await supabase.from('gastos').insert({
+    grupo_id: grupoId,
+    fecha: datos.fecha,
+    importe: datos.importe,
+    categoria_id: datos.categoriaId,
+    descripcion: datos.descripcion,
+  });
+  if (error) throw error;
+}
+
+export async function quitarGasto(gastoId: string): Promise<void> {
+  const { error } = await supabase.from('gastos').delete().eq('id', gastoId);
+  if (error) throw error;
 }

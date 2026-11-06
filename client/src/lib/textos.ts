@@ -124,6 +124,8 @@ export const textos = {
     ingresoNoValido: 'El importe de ingresos no es válido.',
     vistaCategorias: 'Vista de categorías',
     vistaAhorro: 'Vista de ahorro',
+    repartoMes: (mes: string) => `Reparto de tu ingreso de ${mes}: gastos por categoría y ahorro.`,
+    sinIngresosReparto: 'Registra los ingresos del mes para ver cómo se reparten.',
     barras: 'Barras',
     tarta: 'Tarta',
     anillo: 'Anillo',

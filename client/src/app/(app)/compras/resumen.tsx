@@ -60,6 +60,8 @@ const TIPOS_CATEGORIA = [
 const TIPOS_AHORRO = [
   { clave: 'barras' as const, etiqueta: t.barras },
   { clave: 'lineas' as const, etiqueta: t.lineas },
+  { clave: 'tarta' as const, etiqueta: t.tarta },
+  { clave: 'anillo' as const, etiqueta: t.anillo },
 ];
 
 /** Resumen del mes: gráficos cambiables, comparativa, ahorro y alta de gastos a mano. */
@@ -88,7 +90,7 @@ export default function ResumenScreen() {
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
   const [vistaCategorias, setVistaCategorias] = useState<'barras' | 'tarta' | 'anillo'>('barras');
-  const [vistaAhorro, setVistaAhorro] = useState<'barras' | 'lineas'>('barras');
+  const [vistaAhorro, setVistaAhorro] = useState<'barras' | 'lineas' | 'tarta' | 'anillo'>('barras');
 
   const cargar = useCallback(async () => {
     if (!grupoId) return;
@@ -150,6 +152,15 @@ export default function ResumenScreen() {
       }),
     [categoriasOrdenadas, nombres],
   );
+
+  // Reparto del ingreso del mes: cada categoría de gasto más el ahorro, si queda algo.
+  const repartoIngreso: Porcion[] = useMemo(() => {
+    const porcionesGasto = porciones.map((p) => ({ ...p }));
+    if (ahorroMes > 0) {
+      porcionesGasto.push({ id: 'ahorro', etiqueta: t.ahorro, valor: ahorroMes, color: '#2E9E5B' });
+    }
+    return porcionesGasto;
+  }, [porciones, ahorroMes]);
 
   const gastosDelMes = useMemo(
     () => gastos.filter((g) => g.fecha.slice(0, 7) === claveMes(mes)).sort((a, b) => b.fecha.localeCompare(a.fecha)),
@@ -382,7 +393,18 @@ export default function ResumenScreen() {
             <ThemedView type="backgroundElement" style={styles.tarjeta}>
               <ThemedText type="smallBold">{t.ahorroUltimos}</ThemedText>
               <SelectorGrafico opciones={TIPOS_AHORRO} valor={vistaAhorro} onCambiar={setVistaAhorro} />
-              {vistaAhorro === 'barras' ? (
+              {(vistaAhorro === 'tarta' || vistaAhorro === 'anillo') && (
+                <ThemedText type="small" themeColor="textSecondary">{t.repartoMes(nombreMes(mes))}</ThemedText>
+              )}
+              {vistaAhorro === 'tarta' || vistaAhorro === 'anillo' ? (
+                ingresosMes <= 0 ? (
+                  <ThemedText type="small" themeColor="textSecondary">{t.sinIngresosReparto}</ThemedText>
+                ) : repartoIngreso.length === 0 ? (
+                  <ThemedText type="small" themeColor="textSecondary">{t.sinGastos}</ThemedText>
+                ) : (
+                  <GraficoTarta porciones={repartoIngreso} anillo={vistaAhorro === 'anillo'} />
+                )
+              ) : vistaAhorro === 'barras' ? (
                 <View style={styles.columnas}>
                   {historial.map((punto) => {
                     const maximo = Math.max(1, ...historial.map((h) => Math.abs(h.ahorro)));

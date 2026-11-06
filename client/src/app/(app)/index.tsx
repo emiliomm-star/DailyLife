@@ -23,7 +23,7 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.contenido}>
-      <Stack.Screen options={{ title: textos.dashboard.titulo }} />
+      <Stack.Screen options={{ title: textos.dashboard.titulo, headerRight: () => null }} />
 
       <ThemedView style={styles.columna}>
         <ThemedText type="subtitle">

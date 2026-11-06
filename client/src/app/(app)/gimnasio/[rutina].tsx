@@ -1,5 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { BuscadorEjercicios } from '@/components/buscador-ejercicios';
@@ -18,6 +19,10 @@ import {
   DatosEjercicio,
   EjercicioRutina,
   EstadoRutina,
+  ICONO_CAMPO,
+  ICONO_CATEGORIA,
+  ICONO_CLASIFICACION,
+  ICONO_ESTADO,
   listarEjercicios,
   obtenerRutina,
   quitarEjercicio,
@@ -33,13 +38,13 @@ const td = textos.gimnasio.detalle;
 
 const COLOR_CLASIFICACION: Record<Clasificacion, string> = { masculina: '#4D96FF', femenina: '#FF8FC7' };
 const OPCIONES_CLASIFICACION = [
-  { clave: 'masculina' as const, etiqueta: t.masculina },
-  { clave: 'femenina' as const, etiqueta: t.femenina },
+  { clave: 'masculina' as const, etiqueta: t.masculina, icono: ICONO_CLASIFICACION.masculina },
+  { clave: 'femenina' as const, etiqueta: t.femenina, icono: ICONO_CLASIFICACION.femenina },
 ];
 const OPCIONES_ESTADO = [
-  { clave: 'borrador' as const, etiqueta: t.borrador },
-  { clave: 'activa' as const, etiqueta: t.activa },
-  { clave: 'archivada' as const, etiqueta: t.archivada },
+  { clave: 'borrador' as const, etiqueta: t.borrador, icono: ICONO_ESTADO.borrador },
+  { clave: 'activa' as const, etiqueta: t.activa, icono: ICONO_ESTADO.activa },
+  { clave: 'archivada' as const, etiqueta: t.archivada, icono: ICONO_ESTADO.archivada },
 ];
 
 /** Una rutina: cambiar su clasificación y estado, y gestionar sus ejercicios (catálogo wger o propios). */
@@ -240,9 +245,14 @@ export default function RutinaScreen() {
                   <View style={styles.ejercicioTextos}>
                     <ThemedText type="smallBold">{ejercicio.nombre}</ThemedText>
                     {(ejercicio.categoria || ejercicio.musculos) && (
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {[ejercicio.categoria, ejercicio.musculos].filter(Boolean).join(' · ')}
-                      </ThemedText>
+                      <View style={styles.subtituloFila}>
+                        {ejercicio.categoria && ICONO_CATEGORIA[ejercicio.categoria] && (
+                          <Ionicons name={ICONO_CATEGORIA[ejercicio.categoria]} size={13} color={color} />
+                        )}
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {[ejercicio.categoria, ejercicio.musculos].filter(Boolean).join(' · ')}
+                        </ThemedText>
+                      </View>
                     )}
                     {resumen !== '' && <ThemedText type="small">{resumen}</ThemedText>}
                   </View>
@@ -252,18 +262,18 @@ export default function RutinaScreen() {
                   <View style={styles.edicion}>
                     <View style={styles.dosColumnas}>
                       <View style={styles.mitad}>
-                        <Campo etiqueta={td.series} value={edicion.series} onChangeText={(series) => setEdicion((e) => ({ ...e, series }))} keyboardType="number-pad" />
+                        <Campo icono={ICONO_CAMPO.series} etiqueta={td.series} value={edicion.series} onChangeText={(series) => setEdicion((e) => ({ ...e, series }))} keyboardType="number-pad" />
                       </View>
                       <View style={styles.mitad}>
-                        <Campo etiqueta={td.repeticiones} value={edicion.repeticiones} onChangeText={(repeticiones) => setEdicion((e) => ({ ...e, repeticiones }))} />
+                        <Campo icono={ICONO_CAMPO.repeticiones} etiqueta={td.repeticiones} value={edicion.repeticiones} onChangeText={(repeticiones) => setEdicion((e) => ({ ...e, repeticiones }))} />
                       </View>
                     </View>
                     <View style={styles.dosColumnas}>
                       <View style={styles.mitad}>
-                        <Campo etiqueta={td.peso} value={edicion.peso} onChangeText={(peso) => setEdicion((e) => ({ ...e, peso }))} keyboardType="decimal-pad" />
+                        <Campo icono={ICONO_CAMPO.peso} etiqueta={td.peso} value={edicion.peso} onChangeText={(peso) => setEdicion((e) => ({ ...e, peso }))} keyboardType="decimal-pad" />
                       </View>
                       <View style={styles.mitad}>
-                        <Campo etiqueta={td.descanso} value={edicion.descanso} onChangeText={(descanso) => setEdicion((e) => ({ ...e, descanso }))} keyboardType="number-pad" />
+                        <Campo icono={ICONO_CAMPO.descanso} etiqueta={td.descanso} value={edicion.descanso} onChangeText={(descanso) => setEdicion((e) => ({ ...e, descanso }))} keyboardType="number-pad" />
                       </View>
                     </View>
                     <View style={styles.acciones}>
@@ -296,7 +306,7 @@ export default function RutinaScreen() {
         <BuscadorEjercicios visible={buscando} onCerrar={() => setBuscando(false)} onElegir={anadir} />
 
         <ThemedText type="smallBold">{td.anadirPropio}</ThemedText>
-        <Campo etiqueta={td.nombreEjercicio} value={nombrePropio} onChangeText={setNombrePropio} onSubmitEditing={anadirPropio} returnKeyType="done" />
+        <Campo icono={ICONO_CAMPO.ejercicio} etiqueta={td.nombreEjercicio} value={nombrePropio} onChangeText={setNombrePropio} onSubmitEditing={anadirPropio} returnKeyType="done" />
         <Boton titulo={td.anadirPropio} onPress={anadirPropio} cargando={guardandoPropio} secundario />
 
         {error && <Mensaje texto={error.texto} detalle={error.detalle} />}
@@ -372,5 +382,10 @@ const styles = StyleSheet.create({
   },
   peligro: {
     color: '#D32F2F',
+  },
+  subtituloFila: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 5,
   },
 });

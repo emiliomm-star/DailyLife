@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -10,7 +12,7 @@ export function ChipsOpciones<T extends string>({
   onCambiar,
   colorActivo = '#1A1A1A',
 }: {
-  opciones: ReadonlyArray<{ clave: T; etiqueta: string }>;
+  opciones: ReadonlyArray<{ clave: T; etiqueta: string; icono?: ComponentProps<typeof Ionicons>['name'] }>;
   valor: T;
   onCambiar: (clave: T) => void;
   colorActivo?: string;
@@ -26,6 +28,9 @@ export function ChipsOpciones<T extends string>({
             accessibilityState={{ selected: activa }}
             onPress={() => onCambiar(opcion.clave)}
             style={[styles.chip, activa ? { backgroundColor: colorActivo } : styles.chipInactivo]}>
+            {opcion.icono && (
+              <Ionicons name={opcion.icono} size={15} color={activa ? '#FFFFFF' : undefined} />
+            )}
             <ThemedText type="small" style={activa ? styles.textoActivo : undefined}>
               {opcion.etiqueta}
             </ThemedText>
@@ -43,6 +48,9 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   chip: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 5,
     borderRadius: 999,
     paddingHorizontal: Spacing.three,
     paddingVertical: 7,

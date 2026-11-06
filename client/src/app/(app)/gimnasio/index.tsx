@@ -1,5 +1,6 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
@@ -14,6 +15,9 @@ import {
   crearRutina,
   EstadoRutina,
   FiltrosRutinas,
+  ICONO_CAMPO,
+  ICONO_CLASIFICACION,
+  ICONO_ESTADO,
   listarRutinas,
   Rutina,
 } from '@/lib/gimnasio';
@@ -28,13 +32,13 @@ const COLOR_CLASIFICACION: Record<Clasificacion, string> = {
 };
 
 const OPCIONES_CLASIFICACION = [
-  { clave: 'masculina' as const, etiqueta: t.masculina },
-  { clave: 'femenina' as const, etiqueta: t.femenina },
+  { clave: 'masculina' as const, etiqueta: t.masculina, icono: ICONO_CLASIFICACION.masculina },
+  { clave: 'femenina' as const, etiqueta: t.femenina, icono: ICONO_CLASIFICACION.femenina },
 ];
 const OPCIONES_ESTADO = [
-  { clave: 'borrador' as const, etiqueta: t.borrador },
-  { clave: 'activa' as const, etiqueta: t.activa },
-  { clave: 'archivada' as const, etiqueta: t.archivada },
+  { clave: 'borrador' as const, etiqueta: t.borrador, icono: ICONO_ESTADO.borrador },
+  { clave: 'activa' as const, etiqueta: t.activa, icono: ICONO_ESTADO.activa },
+  { clave: 'archivada' as const, etiqueta: t.archivada, icono: ICONO_ESTADO.archivada },
 ];
 
 /** Lista de rutinas de musculación, con filtros por clasificación y estado, y alta de rutinas. */
@@ -100,13 +104,13 @@ export default function GimnasioScreen() {
 
       <View style={styles.columna}>
         <ChipsOpciones
-          opciones={[{ clave: 'todas' as const, etiqueta: t.todas }, ...OPCIONES_CLASIFICACION]}
+          opciones={[{ clave: 'todas' as const, etiqueta: t.todas, icono: 'apps' as const }, ...OPCIONES_CLASIFICACION]}
           valor={filtros.clasificacion}
           onCambiar={(clasificacion) => setFiltros((f) => ({ ...f, clasificacion }))}
         />
         <ChipsOpciones
           opciones={[
-            { clave: 'todas' as const, etiqueta: t.todas },
+            { clave: 'todas' as const, etiqueta: t.todas, icono: 'apps' as const },
             ...OPCIONES_ESTADO,
           ]}
           valor={filtros.estado}
@@ -132,9 +136,14 @@ export default function GimnasioScreen() {
                   onPress={() => router.push({ pathname: '/gimnasio/[rutina]', params: { rutina: rutina.id } })}
                   style={({ pressed }) => [styles.tarjeta, { backgroundColor: color, opacity: pressed ? 0.85 : 1 }]}>
                   <ThemedText style={[styles.nombre, { color: textoColor }]}>{rutina.nombre}</ThemedText>
-                  <ThemedText style={[styles.subtitulo, { color: textoColor }]}>
-                    {`${t[rutina.clasificacion]} · ${t[rutina.estado]}`}
-                  </ThemedText>
+                  <View style={styles.subtituloFila}>
+                    <Ionicons name={ICONO_CLASIFICACION[rutina.clasificacion]} size={14} color={textoColor} />
+                    <ThemedText style={[styles.subtitulo, { color: textoColor }]}>
+                      {`${t[rutina.clasificacion]}`}
+                    </ThemedText>
+                    <Ionicons name={ICONO_ESTADO[rutina.estado]} size={14} color={textoColor} />
+                    <ThemedText style={[styles.subtitulo, { color: textoColor }]}>{t[rutina.estado]}</ThemedText>
+                  </View>
                 </Pressable>
               </Animated.View>
             );
@@ -142,7 +151,7 @@ export default function GimnasioScreen() {
         )}
 
         <ThemedText type="smallBold" style={styles.cabecera}>{t.nuevaRutina}</ThemedText>
-        <Campo etiqueta={t.nombre} value={nombreNueva} onChangeText={setNombreNueva} returnKeyType="done" />
+        <Campo etiqueta={t.nombre} icono={ICONO_CAMPO.rutina} value={nombreNueva} onChangeText={setNombreNueva} returnKeyType="done" />
         <ThemedText type="small" themeColor="textSecondary">{t.clasificacion}</ThemedText>
         <ChipsOpciones opciones={OPCIONES_CLASIFICACION} valor={clasificacionNueva} onCambiar={setClasificacionNueva} />
         <ThemedText type="small" themeColor="textSecondary">{t.estado}</ThemedText>
@@ -185,6 +194,11 @@ const styles = StyleSheet.create({
   nombre: {
     fontSize: 18,
     fontWeight: '800',
+  },
+  subtituloFila: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 5,
   },
   subtitulo: {
     fontSize: 13,

@@ -119,3 +119,27 @@ export async function quitarEjercicio(ejercicioId: string): Promise<void> {
   const { error } = await supabase.from('ejercicios_rutina').delete().eq('id', ejercicioId);
   if (error) throw error;
 }
+
+/** Iconos de Ionicons por valor y por campo del gimnasio. */
+export const ICONO_CLASIFICACION = { masculina: 'male', femenina: 'female' } as const;
+export const ICONO_ESTADO = { borrador: 'create-outline', activa: 'flash', archivada: 'archive' } as const;
+export const ICONO_CAMPO = {
+  rutina: 'body',
+  ejercicio: 'fitness',
+  series: 'list',
+  repeticiones: 'repeat',
+  peso: 'barbell',
+  descanso: 'timer',
+} as const;
+
+/** Icono de cada categoría de ejercicio (nombres en español, como vienen del catálogo). */
+export const ICONO_CATEGORIA: Record<string, 'walk' | 'body' | 'fitness' | 'accessibility' | 'shield' | 'ellipse' | 'heart' | 'footsteps'> = {
+  Piernas: 'walk',
+  Espalda: 'body',
+  Brazos: 'fitness',
+  Hombros: 'accessibility',
+  Pecho: 'shield',
+  Abdominales: 'ellipse',
+  Cardio: 'heart',
+  Gemelos: 'footsteps',
+};

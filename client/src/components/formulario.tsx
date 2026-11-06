@@ -1,10 +1,12 @@
-import type { PropsWithChildren } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import type { ComponentProps, PropsWithChildren } from 'react';
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
+  View,
   type TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,16 +19,21 @@ import { colorDeTexto } from '@/lib/estados-visual';
 
 type CampoProps = TextInputProps & {
   etiqueta: string;
+  /** Icono opcional junto a la etiqueta (nombre de Ionicons). */
+  icono?: ComponentProps<typeof Ionicons>['name'];
 };
 
-export function Campo({ etiqueta, style, ...resto }: CampoProps) {
+export function Campo({ etiqueta, icono, style, ...resto }: CampoProps) {
   const theme = useTheme();
 
   return (
     <ThemedView style={styles.campo}>
-      <ThemedText type="small" themeColor="textSecondary">
-        {etiqueta}
-      </ThemedText>
+      <View style={styles.etiquetaFila}>
+        {icono && <Ionicons name={icono} size={15} color={theme.textSecondary} />}
+        <ThemedText type="small" themeColor="textSecondary">
+          {etiqueta}
+        </ThemedText>
+      </View>
       <TextInput
         accessibilityLabel={etiqueta}
         placeholderTextColor={theme.textSecondary}
@@ -112,6 +119,11 @@ export function Mensaje({ texto, detalle }: { texto: string; detalle?: string })
 }
 
 const styles = StyleSheet.create({
+  etiquetaFila: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
   pantalla: {
     flex: 1,
   },

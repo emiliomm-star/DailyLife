@@ -113,13 +113,16 @@ export type Producto = {
   nombre: string;
   comprado: boolean;
   comprado_en: string | null;
+  marca: string | null;
+  imagen_url: string | null;
+  precio: number | null;
 };
 
 /** Productos de una categoría (pendientes y comprados). */
 export async function listarProductos(grupoId: string, categoriaId: string): Promise<Producto[]> {
   const { data, error } = await supabase
     .from('productos')
-    .select('id, nombre, comprado, comprado_en')
+    .select('id, nombre, comprado, comprado_en, marca, imagen_url, precio')
     .eq('grupo_id', grupoId)
     .eq('categoria_id', categoriaId)
     .order('nombre');
@@ -137,10 +140,24 @@ export async function obtenerCategoria(categoriaId: string): Promise<Categoria |
   return data;
 }
 
-export async function crearProducto(grupoId: string, categoriaId: string, nombre: string): Promise<void> {
-  const { error } = await supabase
-    .from('productos')
-    .insert({ grupo_id: grupoId, categoria_id: categoriaId, nombre: nombre.trim() });
+export type DatosProducto = {
+  nombre: string;
+  codigoBarras?: string | null;
+  marca?: string | null;
+  imagenUrl?: string | null;
+  precio?: number | null;
+};
+
+export async function crearProducto(grupoId: string, categoriaId: string, datos: DatosProducto): Promise<void> {
+  const { error } = await supabase.from('productos').insert({
+    grupo_id: grupoId,
+    categoria_id: categoriaId,
+    nombre: datos.nombre.trim(),
+    codigo_barras: datos.codigoBarras ?? null,
+    marca: datos.marca ?? null,
+    imagen_url: datos.imagenUrl ?? null,
+    precio: datos.precio ?? null,
+  });
   if (error) throw error;
 }
 

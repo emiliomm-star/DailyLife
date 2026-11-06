@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, SectionList, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 
+import { BuscadorProductos } from '@/components/buscador-productos';
 import { Boton, Campo, Mensaje } from '@/components/formulario';
 import { EstadoIcono } from '@/components/estado-icono';
 import { ThemedText } from '@/components/themed-text';
@@ -12,6 +13,7 @@ import { useAuth } from '@/lib/auth-context';
 import {
   Categoria,
   crearProducto,
+  DatosProducto,
   listarProductos,
   marcarComprado,
   marcarPendiente,
@@ -39,7 +41,7 @@ export default function CategoriaScreen() {
   const [categoria, setCategoria] = useState<Categoria | null>(null);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [nuevo, setNuevo] = useState('');
+  const [buscando, setBuscando] = useState(false);
   const [importe, setImporte] = useState('');
   const [ocupadoId, setOcupadoId] = useState<string | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
@@ -95,17 +97,10 @@ export default function CategoriaScreen() {
     }
   }
 
-  function anadir() {
+  async function anadirProducto(datos: DatosProducto) {
     if (!grupoId || !categoriaId) return;
-    const nombre = nuevo.trim();
-    if (!nombre) {
-      setError({ texto: t.nombreVacio, detalle: 'Nombre vacío' });
-      return;
-    }
-    operar(async () => {
-      await crearProducto(grupoId, categoriaId, nombre);
-      setNuevo('');
-    });
+    await crearProducto(grupoId, categoriaId, datos);
+    await cargar();
   }
 
   /** Lee el importe escrito (acepta coma o punto). Devuelve null si no hay importe válido. */
@@ -196,8 +191,13 @@ export default function CategoriaScreen() {
           stickySectionHeadersEnabled={false}
           ListHeaderComponent={
             <View style={styles.columna}>
-              <Campo etiqueta={t.nuevo} value={nuevo} onChangeText={setNuevo} onSubmitEditing={anadir} returnKeyType="done" />
-              <Boton titulo={t.anadir} onPress={anadir} cargando={ocupado} colorFondo={color} />
+              <Boton titulo={t.anadir} onPress={() => setBuscando(true)} colorFondo={color} />
+              <BuscadorProductos
+                visible={buscando}
+                color={color}
+                onCerrar={() => setBuscando(false)}
+                onElegir={anadirProducto}
+              />
               <Campo
                 etiqueta={t.importe}
                 value={importe}
@@ -295,6 +295,13 @@ const FilaProducto = memo(function FilaProducto({
           </View>
           <View style={styles.textos}>
             <ThemedText style={esComprado ? styles.nombreComprado : styles.nombre}>{producto.nombre}</ThemedText>
+            {(producto.marca || producto.precio != null) && (
+              <ThemedText type="small" themeColor="textSecondary">
+                {[producto.marca, producto.precio != null ? `${producto.precio.toFixed(2).replace('.', ',')} €` : null]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </ThemedText>
+            )}
             {esComprado && producto.comprado_en && (
               <ThemedText type="small" themeColor="textSecondary">
                 {new Date(producto.comprado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}

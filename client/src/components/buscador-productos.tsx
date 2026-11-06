@@ -27,6 +27,8 @@ type BuscadorProductosProps = {
  */
 export function BuscadorProductos({ visible, color, onCerrar, onElegir }: BuscadorProductosProps) {
   const [termino, setTermino] = useState('');
+  // Término ya enviado: la búsqueda solo se lanza al pulsar Buscar, no mientras escribes.
+  const [buscado, setBuscado] = useState('');
   const [resultados, setResultados] = useState<ProductoCatalogo[]>([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<ErrorDescrito | null>(null);
@@ -34,10 +36,10 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
   const [precio, setPrecio] = useState('');
   const [guardando, setGuardando] = useState(false);
 
-  // Búsqueda con retardo y cancelación.
+  // Una búsqueda por cada envío: el servidor de Open Food Facts limita las búsquedas a 10 por minuto por IP.
   useEffect(() => {
     if (!visible) return;
-    const texto = termino.trim();
+    const texto = buscado.trim();
     if (texto.length < 3) {
       setResultados([]);
       setError(null);
@@ -46,33 +48,39 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
     }
     const controlador = new AbortController();
     setCargando(true);
-    const temporizador = setTimeout(() => {
-      buscarEnCatalogo(texto, controlador.signal)
-        .then((lista) => {
-          setResultados(lista);
-          setError(null);
-        })
-        .catch((e) => {
-          if (controlador.signal.aborted) return;
-          setResultados([]);
-          setError(
-            e instanceof CatalogoNoDisponible
-              ? { texto: t.catalogoOcupado, detalle: e.message }
-              : describirError(e),
-          );
-        })
-        .finally(() => {
-          if (!controlador.signal.aborted) setCargando(false);
-        });
-    }, 600);
-    return () => {
-      clearTimeout(temporizador);
-      controlador.abort();
-    };
-  }, [termino, visible]);
+    buscarEnCatalogo(texto, controlador.signal)
+      .then((lista) => {
+        setResultados(lista);
+        setError(null);
+      })
+      .catch((e) => {
+        if (controlador.signal.aborted) return;
+        setResultados([]);
+        setError(
+          e instanceof CatalogoNoDisponible
+            ? { texto: t.catalogoOcupado, detalle: e.message }
+            : describirError(e),
+        );
+      })
+      .finally(() => {
+        if (!controlador.signal.aborted) setCargando(false);
+      });
+    return () => controlador.abort();
+  }, [buscado, visible]);
+
+  function buscar() {
+    const texto = termino.trim();
+    if (texto.length < 3) {
+      setError({ texto: t.ayuda, detalle: `Términos escritos: ${texto.length} caracteres` });
+      return;
+    }
+    setError(null);
+    setBuscado(texto);
+  }
 
   function cerrar() {
     setTermino('');
+    setBuscado('');
     setResultados([]);
     setElegido(null);
     setPrecio('');
@@ -139,8 +147,10 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
               autoFocus
               autoCorrect={false}
               returnKeyType="search"
+              onSubmitEditing={buscar}
               placeholder={t.ejemplo}
             />
+            <Boton titulo={t.buscarBoton} onPress={buscar} cargando={cargando} colorFondo={color} />
 
             {cargando && <ActivityIndicator style={styles.espacio} />}
             {error && <Mensaje texto={error.texto} detalle={error.detalle} />}
@@ -156,7 +166,7 @@ export function BuscadorProductos({ visible, color, onCerrar, onElegir }: Buscad
                 undefined
               }
               ListEmptyComponent={
-                termino.trim().length >= 3 && !cargando && !error ? (
+                buscado.trim().length >= 3 && !cargando && !error ? (
                   <ThemedText type="small" themeColor="textSecondary" style={styles.centrado}>
                     {t.sinResultados}
                   </ThemedText>

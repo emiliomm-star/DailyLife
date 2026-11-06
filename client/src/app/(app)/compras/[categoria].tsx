@@ -84,6 +84,9 @@ export default function CategoriaScreen() {
     ];
   }, [productos]);
 
+  // Open Food Facts solo aplica a la compra de supermercado.
+  const esSupermercado = categoria?.nombre.trim().toLowerCase() === 'supermercado';
+
   const visual = categoria ? visualDe(categoria) : null;
   const color = visual?.color ?? '#4D96FF';
   const textoColor = colorDeTexto(color);
@@ -247,13 +250,17 @@ export default function CategoriaScreen() {
                 />
               </View>
 
-              <Boton titulo={textos.buscador.buscarOff} onPress={() => setBuscando(true)} secundario />
-              <BuscadorProductos
-                visible={buscando}
-                color={color}
-                onCerrar={() => setBuscando(false)}
-                onElegir={anadirProducto}
-              />
+              {esSupermercado && (
+                <>
+                  <Boton titulo={textos.buscador.buscarOff} onPress={() => setBuscando(true)} secundario />
+                  <BuscadorProductos
+                    visible={buscando}
+                    color={color}
+                    onCerrar={() => setBuscando(false)}
+                    onElegir={anadirProducto}
+                  />
+                </>
+              )}
               <Campo
                 etiqueta={t.importe}
                 value={importe}

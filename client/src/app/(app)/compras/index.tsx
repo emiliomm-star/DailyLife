@@ -221,6 +221,7 @@ export default function ComprasScreen() {
           onSubmitEditing={anadir}
           returnKeyType="done"
         />
+        <Boton titulo={textos.resumen.abrir} onPress={() => router.push('/compras/resumen')} secundario />
         <Boton titulo={t.anadir} onPress={anadir} cargando={ocupado} colorFondo={PALETA[4]} />
 
         {error && <Mensaje texto={error.texto} detalle={error.detalle} />}

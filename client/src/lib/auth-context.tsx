@@ -29,6 +29,8 @@ type InfoGrupo =
 type ContextoAuth = {
   estado: EstadoAuth;
   grupo: Grupo | null;
+  /** Id del usuario que ha entrado (null si no hay sesión). */
+  usuarioId: string | null;
   /** Error al cargar el grupo, cuando estado es 'error'. */
   errorGrupo: ErrorDescrito | null;
   cerrarSesion: () => Promise<void>;
@@ -111,7 +113,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       grupo = infoGrupo.grupo;
     }
 
-    return { estado, grupo, errorGrupo, cerrarSesion, recargarGrupo };
+    return { estado, grupo, usuarioId: userId, errorGrupo, cerrarSesion, recargarGrupo };
   }, [sesionCargada, userId, infoGrupo, cerrarSesion, recargarGrupo]);
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

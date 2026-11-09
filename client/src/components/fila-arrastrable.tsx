@@ -73,7 +73,7 @@ export function FilaArrastrable({
       <ThemedView type="backgroundElement" style={[styles.fila, compacta && styles.compacta]}>
         <GestureDetector gesture={gesto}>
           <View accessibilityLabel={etiquetaArrastre} style={[styles.asa, deshabilitada && styles.asaDeshabilitada]}>
-            <Ionicons name="reorder-three" size={28} color={theme.textSecondary} />
+            <Ionicons name="reorder-three" size={26} color={theme.textSecondary} />
           </View>
         </GestureDetector>
         {children}
@@ -87,9 +87,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: Spacing.two,
     flexDirection: 'row',
-    gap: Spacing.three,
+    gap: Spacing.two,
     minHeight: 48,
-    padding: Spacing.three,
+    padding: Spacing.two + Spacing.one,
   },
   compacta: {
     height: ALTURA_FILA,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   asa: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 28,
+    width: 24,
   },
   asaDeshabilitada: {
     opacity: 0.3,

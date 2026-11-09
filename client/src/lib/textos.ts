@@ -74,6 +74,8 @@ export const textos = {
       icono: 'Icono',
       ordenAyuda: 'Arrastra ≡ para cambiar el orden. Es el orden en que el widget pasa de un estado al siguiente.',
       arrastrar: 'Arrastrar para ordenar',
+      subir: 'Subir',
+      bajar: 'Bajar',
     },
   },
   dispositivos: {

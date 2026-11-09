@@ -1,6 +1,7 @@
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, useSharedValue } from 'react-native-reanimated';
 
 import { Boton, Campo, Mensaje } from '@/components/formulario';
@@ -126,16 +127,12 @@ export default function GestionEstadosScreen() {
     setArrastre(siguiente);
   }
 
-  /** Al soltar, la lista toma el nuevo orden y se guarda: cada estado recibe su posición (1, 2, …). */
-  async function soltarArrastre() {
-    const actual = arrastreRef.current;
-    arrastreRef.current = null;
-    setArrastre(null);
-    if (!actual || actual.origen === actual.destino) return;
-
+  /** Pasa la fila de la posición origen a la destino y guarda el orden: cada estado recibe su posición (1, 2, …). */
+  async function reordenar(origen: number, destino: number) {
+    if (origen === destino) return;
     const nueva = [...estados];
-    const [movido] = nueva.splice(actual.origen, 1);
-    nueva.splice(actual.destino, 0, movido);
+    const [movido] = nueva.splice(origen, 1);
+    nueva.splice(destino, 0, movido);
     const cambios = nueva.flatMap((estado, indice) => (estado.orden === indice + 1 ? [] : [{ id: estado.id, orden: indice + 1 }]));
 
     setEstados(nueva);
@@ -149,6 +146,14 @@ export default function GestionEstadosScreen() {
       setOcupado(false);
       await cargar();
     }
+  }
+
+  /** Al soltar el arrastre, la fila se coloca donde está el dedo. */
+  async function soltarArrastre() {
+    const actual = arrastreRef.current;
+    arrastreRef.current = null;
+    setArrastre(null);
+    if (actual) await reordenar(actual.origen, actual.destino);
   }
 
   /** Desplazamiento de cada fila mientras otra se arrastra: las que quedan entre origen y destino se corren un hueco. */
@@ -238,6 +243,26 @@ export default function GestionEstadosScreen() {
                       <ThemedText type="smallBold" numberOfLines={1} style={styles.flexible}>
                         {estado.nombre}
                       </ThemedText>
+                      <View style={styles.flechas}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={t.subir}
+                          disabled={ordenBloqueado || indice === 0}
+                          onPress={() => reordenar(indice, indice - 1)}
+                          hitSlop={6}
+                          style={({ pressed }) => [styles.flecha, { opacity: pressed ? 0.6 : 1 }]}>
+                          <Ionicons name="chevron-up" size={22} color={indice === 0 ? '#B0B4BA' : '#60646C'} />
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={t.bajar}
+                          disabled={ordenBloqueado || indice === estados.length - 1}
+                          onPress={() => reordenar(indice, indice + 1)}
+                          hitSlop={6}
+                          style={({ pressed }) => [styles.flecha, { opacity: pressed ? 0.6 : 1 }]}>
+                          <Ionicons name="chevron-down" size={22} color={indice === estados.length - 1 ? '#B0B4BA' : '#60646C'} />
+                        </Pressable>
+                      </View>
                       <Pressable
                         accessibilityRole="button"
                         onPress={() => {
@@ -296,6 +321,15 @@ const styles = StyleSheet.create({
   },
   lista: {
     gap: Spacing.two,
+  },
+  flechas: {
+    justifyContent: 'center',
+  },
+  flecha: {
+    alignItems: 'center',
+    height: 26,
+    justifyContent: 'center',
+    width: 26,
   },
   cabeceraEdicion: {
     alignItems: 'center',

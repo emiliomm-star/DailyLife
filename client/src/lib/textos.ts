@@ -266,6 +266,17 @@ export const textos = {
       compras: 'Compras y gastos',
     },
     error: 'No se pudo guardar el cambio.',
+    avisos: {
+      titulo: 'Avisos de estados',
+      descripcion:
+        'Recibe un aviso en este dispositivo cada vez que alguien del grupo cambie de estado. Solo llegan a quien puede ver los estados de esa persona.',
+      activar: 'Activar avisos',
+      desactivar: 'Desactivar avisos',
+      noSoportado:
+        'Este navegador no admite avisos. En iPhone, añade DailyLife a la pantalla de inicio desde Compartir y ábrela desde ahí.',
+      permisoDenegado: 'Has bloqueado los avisos. Permítelos en los ajustes del navegador.',
+      error: 'No se pudieron activar los avisos en este dispositivo.',
+    },
   },
   errorGrupo: {
     titulo: 'No se pudo cargar tu grupo',

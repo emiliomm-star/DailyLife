@@ -2,7 +2,7 @@ import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
-import { Mensaje } from '@/components/formulario';
+import { Boton, Mensaje } from '@/components/formulario';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -15,6 +15,13 @@ import {
   type Modulo,
 } from '@/lib/privacidad';
 import { listarMiembros, type Miembro } from '@/lib/plan';
+import {
+  activarAvisos,
+  avisosActivados,
+  avisosSoportados,
+  desactivarAvisos,
+  PermisoDenegado,
+} from '@/lib/notificaciones';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
 import { useVersionTabla } from '@/lib/sincronizacion';
 
@@ -32,6 +39,38 @@ export default function PrivacidadScreen() {
   const [ocultos, setOcultos] = useState<Set<string>>(new Set());
   const [guardando, setGuardando] = useState<string | null>(null);
   const [error, setError] = useState<ErrorDescrito | null>(null);
+  const [avisos, setAvisos] = useState<'cargando' | 'si' | 'no' | 'no-soportado'>('cargando');
+  const [cambiandoAvisos, setCambiandoAvisos] = useState(false);
+
+  useEffect(() => {
+    if (!avisosSoportados()) {
+      setAvisos('no-soportado');
+      return;
+    }
+    avisosActivados()
+      .then((activos) => setAvisos(activos ? 'si' : 'no'))
+      .catch(() => setAvisos('no'));
+  }, []);
+
+  async function cambiarAvisos() {
+    if (!grupoId || !usuarioId) return;
+    setCambiandoAvisos(true);
+    setError(null);
+    try {
+      if (avisos === 'si') {
+        await desactivarAvisos();
+        setAvisos('no');
+      } else {
+        await activarAvisos(grupoId, usuarioId);
+        setAvisos('si');
+      }
+    } catch (e) {
+      const texto = e instanceof PermisoDenegado ? t.avisos.permisoDenegado : t.avisos.error;
+      setError({ texto, detalle: describirError(e).detalle });
+    } finally {
+      setCambiandoAvisos(false);
+    }
+  }
 
   const cargar = useCallback(async () => {
     if (!grupoId || !usuarioId) return;
@@ -84,6 +123,27 @@ export default function PrivacidadScreen() {
         <ThemedText type="small" themeColor="textSecondary">
           {t.descripcion}
         </ThemedText>
+
+        <ThemedView type="backgroundElement" style={styles.tarjeta}>
+          <ThemedText type="smallBold">{t.avisos.titulo}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {t.avisos.descripcion}
+          </ThemedText>
+          {avisos === 'cargando' ? (
+            <ActivityIndicator />
+          ) : avisos === 'no-soportado' ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {t.avisos.noSoportado}
+            </ThemedText>
+          ) : (
+            <Boton
+              titulo={avisos === 'si' ? t.avisos.desactivar : t.avisos.activar}
+              onPress={cambiarAvisos}
+              cargando={cambiandoAvisos}
+              secundario={avisos === 'si'}
+            />
+          )}
+        </ThemedView>
 
         {otros === null ? (
           <ActivityIndicator style={styles.espacio} />

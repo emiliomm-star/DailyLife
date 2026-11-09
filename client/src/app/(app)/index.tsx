@@ -14,7 +14,7 @@ import { textos } from '@/lib/textos';
 /** Módulos del dashboard (RF-03). Añadir uno nuevo es añadir una entrada aquí y su carpeta en src/app/(app). */
 const modulos = [
   { ruta: '/gimnasio', icono: 'barbell' as const, color: '#6BCB77', ...textos.dashboard.modulos.gimnasio },
-  { ruta: '/go-to-work', icono: 'briefcase' as const, color: '#4D96FF', ...textos.dashboard.modulos.goToWork },
+  { ruta: '/estados', icono: 'briefcase' as const, color: '#4D96FF', ...textos.dashboard.modulos.goToWork },
   { ruta: '/compras', icono: 'cart' as const, color: '#FFB347', ...textos.dashboard.modulos.compras },
 ] as const;
 
@@ -63,6 +63,11 @@ export default function DashboardScreen() {
           </ThemedView>
         )}
 
+        <Boton
+          titulo={textos.dashboard.privacidad}
+          onPress={() => router.push('/privacidad')}
+          secundario
+        />
         <Boton
           titulo={textos.dashboard.widget}
           onPress={() => router.push('/dispositivos')}

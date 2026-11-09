@@ -15,8 +15,9 @@ import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
 
 const t = textos.goToWork.estados;
 
-export default function EstadosScreen() {
-  const { grupo } = useAuth();
+/** Gestión de mis estados: añadir, editar o quitar. Solo se editan los propios (la base lo impone). */
+export default function GestionEstadosScreen() {
+  const { grupo, usuarioId } = useAuth();
   const grupoId = grupo?.id;
 
   const [estados, setEstados] = useState<EstadoTrabajo[]>([]);
@@ -30,13 +31,13 @@ export default function EstadosScreen() {
   const [error, setError] = useState<ErrorDescrito | null>(null);
 
   const cargar = useCallback(async () => {
-    if (!grupoId) return;
+    if (!grupoId || !usuarioId) return;
     try {
-      setEstados(await listarEstados(grupoId));
+      setEstados(await listarEstados(grupoId, usuarioId));
     } catch (e) {
       setError(describirError(e));
     }
-  }, [grupoId]);
+  }, [grupoId, usuarioId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -59,7 +60,7 @@ export default function EstadosScreen() {
   }
 
   function anadir() {
-    if (!grupoId) return;
+    if (!grupoId || !usuarioId) return;
     const nombre = nuevo.trim();
     if (!nombre) {
       setError({ texto: t.nombreVacio, detalle: 'Nombre vacío' });
@@ -68,7 +69,7 @@ export default function EstadosScreen() {
     const orden = Math.max(0, ...estados.map((estado) => estado.orden)) + 1;
     const visual = visualDe({ nombre, orden });
     operar(async () => {
-      await crearEstado(grupoId, nombre, orden, visual);
+      await crearEstado(grupoId, usuarioId, nombre, orden, visual);
       setNuevo('');
     });
   }

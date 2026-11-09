@@ -1,5 +1,11 @@
 import { supabase } from '@/lib/supabase';
 
+/**
+ * Estados: cada persona tiene su propia lista (created_by). Lo que otros miembros ven depende de
+ * la privacidad del módulo 'estados' (ver lib/privacidad.ts). Las escrituras solo afectan a lo propio:
+ * la base de datos lo impone con RLS.
+ */
+
 export type EstadoTrabajo = {
   id: string;
   nombre: string;
@@ -24,12 +30,20 @@ export function limitesDelDia(fecha: Date): { desde: Date; hasta: Date } {
   return { desde, hasta };
 }
 
-/** Estados del grupo. Por defecto solo los activos, que son los que aparecen como botones. */
-export async function listarEstados(grupoId: string, incluirInactivos = false): Promise<EstadoTrabajo[]> {
+/**
+ * Estados de una persona del grupo. Por defecto solo los activos, que son los que aparecen como botones.
+ * Si la persona no los comparte contigo, la lista llega vacía.
+ */
+export async function listarEstados(
+  grupoId: string,
+  duenoId: string,
+  incluirInactivos = false,
+): Promise<EstadoTrabajo[]> {
   let consulta = supabase
     .from('estados_trabajo')
     .select('id, nombre, orden, activo, icono, color')
     .eq('grupo_id', grupoId)
+    .eq('created_by', duenoId)
     .order('orden')
     .order('nombre');
 
@@ -43,29 +57,44 @@ export async function listarEstados(grupoId: string, incluirInactivos = false): 
 }
 
 /**
- * Crea los estados de ejemplo si el grupo todavía no tiene ninguno.
- * Es seguro llamarla varias veces: la restricción unique(grupo_id, nombre) evita duplicados.
+ * Crea los estados de ejemplo para la persona indicada si todavía no tiene ninguno.
+ * Es seguro llamarla varias veces: la restricción unique(grupo_id, created_by, nombre) evita duplicados.
  */
-export async function sembrarEstadosIniciales(grupoId: string, nombres: readonly string[]): Promise<void> {
-  const existentes = await listarEstados(grupoId, true);
+export async function sembrarEstadosIniciales(
+  grupoId: string,
+  usuarioId: string,
+  nombres: readonly string[],
+): Promise<void> {
+  const existentes = await listarEstados(grupoId, usuarioId, true);
   if (existentes.length > 0) return;
 
   const { error } = await supabase.from('estados_trabajo').upsert(
-    nombres.map((nombre, indice) => ({ grupo_id: grupoId, nombre, orden: indice + 1 })),
-    { onConflict: 'grupo_id,nombre', ignoreDuplicates: true },
+    nombres.map((nombre, indice) => ({
+      grupo_id: grupoId,
+      created_by: usuarioId,
+      nombre,
+      orden: indice + 1,
+    })),
+    { onConflict: 'grupo_id,created_by,nombre', ignoreDuplicates: true },
   );
   if (error) throw error;
 }
 
 export async function crearEstado(
   grupoId: string,
+  usuarioId: string,
   nombre: string,
   orden: number,
   visual: { icono: string; color: string },
 ): Promise<void> {
-  const { error } = await supabase
-    .from('estados_trabajo')
-    .insert({ grupo_id: grupoId, nombre: nombre.trim(), orden, icono: visual.icono, color: visual.color });
+  const { error } = await supabase.from('estados_trabajo').insert({
+    grupo_id: grupoId,
+    created_by: usuarioId,
+    nombre: nombre.trim(),
+    orden,
+    icono: visual.icono,
+    color: visual.color,
+  });
   if (error) throw error;
 }
 
@@ -100,20 +129,26 @@ export async function quitarEstado(estadoId: string): Promise<void> {
   }
 }
 
-/** Registra que se ha marcado un estado ahora mismo. La fecha y hora la guarda la base de datos. */
-export async function registrarEstado(grupoId: string, estadoId: string): Promise<void> {
+/** Registra que se ha marcado un estado propio ahora mismo. La fecha y hora la guarda la base de datos. */
+export async function registrarEstado(grupoId: string, usuarioId: string, estadoId: string): Promise<void> {
   const { error } = await supabase
     .from('registros_trabajo')
-    .insert({ grupo_id: grupoId, estado_id: estadoId });
+    .insert({ grupo_id: grupoId, created_by: usuarioId, estado_id: estadoId });
   if (error) throw error;
 }
 
-/** Historial de un intervalo, del más reciente al más antiguo. */
-export async function listarRegistros(grupoId: string, desde: Date, hasta: Date): Promise<RegistroTrabajo[]> {
+/** Historial de una persona en un intervalo, del más reciente al más antiguo. */
+export async function listarRegistros(
+  grupoId: string,
+  duenoId: string,
+  desde: Date,
+  hasta: Date,
+): Promise<RegistroTrabajo[]> {
   const { data, error } = await supabase
     .from('registros_trabajo')
     .select('id, marcado_en, estado_id, estados_trabajo(nombre)')
     .eq('grupo_id', grupoId)
+    .eq('created_by', duenoId)
     .gte('marcado_en', desde.toISOString())
     .lt('marcado_en', hasta.toISOString())
     .order('marcado_en', { ascending: false });

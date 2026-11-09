@@ -66,7 +66,7 @@ const TIPOS_AHORRO = [
 
 /** Resumen del mes: gráficos cambiables, comparativa, ahorro y alta de gastos a mano. */
 export default function ResumenScreen() {
-  const { grupo } = useAuth();
+  const { grupo, usuarioId } = useAuth();
   const grupoId = grupo?.id;
   const versionGastos = useVersionTabla('gastos');
   const versionIngresos = useVersionTabla('ingresos');
@@ -75,6 +75,7 @@ export default function ResumenScreen() {
   const [mes, setMes] = useState<Mes>(mesActual);
   const [gastos, setGastos] = useState<GastoFila[]>([]);
   const [ingresos, setIngresos] = useState<Record<string, number>>({});
+  const [ingresosPropios, setIngresosPropios] = useState<Record<string, number>>({});
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<ErrorDescrito | null>(null);
@@ -93,16 +94,17 @@ export default function ResumenScreen() {
   const [vistaAhorro, setVistaAhorro] = useState<'barras' | 'lineas' | 'tarta' | 'anillo'>('barras');
 
   const cargar = useCallback(async () => {
-    if (!grupoId) return;
+    if (!grupoId || !usuarioId) return;
     try {
       const desde = desplazarMes(mes, -MESES_HISTORIAL);
       const [g, i, c] = await Promise.all([
         cargarGastos(grupoId, desde, mes),
-        cargarIngresos(grupoId, desde, mes),
+        cargarIngresos(grupoId, usuarioId, desde, mes),
         listarCategorias(grupoId),
       ]);
       setGastos(g);
-      setIngresos(i);
+      setIngresos(i.totales);
+      setIngresosPropios(i.propios);
       setCategorias(c);
       setError(null);
     } catch (e) {
@@ -110,7 +112,7 @@ export default function ResumenScreen() {
     } finally {
       setCargando(false);
     }
-  }, [grupoId, mes]);
+  }, [grupoId, usuarioId, mes]);
 
   useEffect(() => {
     cargar();
@@ -121,11 +123,11 @@ export default function ResumenScreen() {
     if (!categoriaNueva && categorias.length > 0) setCategoriaNueva(categorias[0].id);
   }, [categorias, categoriaNueva]);
 
-  // Al cambiar de mes, el campo de ingresos muestra el valor de ese mes.
+  // Al cambiar de mes, el campo de ingresos muestra mi valor de ese mes.
   useEffect(() => {
-    const valor = ingresos[claveMes(mes)];
+    const valor = ingresosPropios[claveMes(mes)];
     setIngresoEscrito(valor != null ? String(valor).replace('.', ',') : '');
-  }, [mes, ingresos]);
+  }, [mes, ingresosPropios]);
 
   const nombres = useMemo(() => new Map(categorias.map((c) => [c.id, c])), [categorias]);
   const gastoActual = useMemo(() => gastoPorCategoria(gastos, mes), [gastos, mes]);
@@ -168,7 +170,7 @@ export default function ResumenScreen() {
   );
 
   async function guardarIngresoMes() {
-    if (!grupoId) return;
+    if (!grupoId || !usuarioId) return;
     const valor = parsearPrecio(ingresoEscrito);
     if (valor === 'error' || valor === null) {
       setError({ texto: t.ingresoNoValido, detalle: `Ingresos escritos: ${ingresoEscrito}` });
@@ -177,7 +179,7 @@ export default function ResumenScreen() {
     setError(null);
     setGuardandoIngreso(true);
     try {
-      await guardarIngreso(grupoId, mes, valor);
+      await guardarIngreso(grupoId, usuarioId, mes, valor);
       await cargar();
     } catch (e) {
       setError(describirError(e));
@@ -261,7 +263,7 @@ export default function ResumenScreen() {
                 <ThemedText style={{ fontWeight: '800', color: colorAhorro(ahorroMes) }}>{euros(ahorroMes)}</ThemedText>
               </View>
               <Campo
-                etiqueta={t.ingresos}
+                etiqueta={t.misIngresos}
                 value={ingresoEscrito}
                 onChangeText={setIngresoEscrito}
                 keyboardType="decimal-pad"
@@ -330,11 +332,13 @@ export default function ResumenScreen() {
                         {g.descripcion && <ThemedText type="small" themeColor="textSecondary">{cat?.nombre ?? ''}</ThemedText>}
                       </View>
                       <ThemedText type="smallBold">{euros(g.importe)}</ThemedText>
-                      <Pressable accessibilityRole="button" onPress={() => quitar(g)} hitSlop={8}>
-                        <ThemedText type="small" style={styles.peligro}>
-                          {confirmandoId === g.id ? t.confirmarQuitar : t.quitar}
-                        </ThemedText>
-                      </Pressable>
+                      {g.creadoPor === usuarioId && (
+                        <Pressable accessibilityRole="button" onPress={() => quitar(g)} hitSlop={8}>
+                          <ThemedText type="small" style={styles.peligro}>
+                            {confirmandoId === g.id ? t.confirmarQuitar : t.quitar}
+                          </ThemedText>
+                        </Pressable>
+                      )}
                     </View>
                   );
                 })

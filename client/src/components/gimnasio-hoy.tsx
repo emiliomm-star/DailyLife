@@ -198,7 +198,9 @@ export function GimnasioHoy() {
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     {!estado || !estado.rutina
-                      ? t.descanso
+                      ? esTu
+                        ? t.descanso
+                        : t.sinRutinaVisible
                       : `${estado.rutina} · ${estado.hechos}/${estado.total}`}
                   </ThemedText>
                 </View>

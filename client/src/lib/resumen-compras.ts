@@ -3,12 +3,17 @@ import { supabase } from '@/lib/supabase';
 /** Mes de calendario. mes va de 0 (enero) a 11 (diciembre). */
 export type Mes = { anio: number; mes: number };
 
+/**
+ * Gastos e ingresos: cada fila tiene una persona dueña (creadoPor / created_by). Las lecturas devuelven
+ * lo que el usuario puede ver según la privacidad del módulo 'compras'; las escrituras son solo propias.
+ */
 export type GastoFila = {
   id: string;
   categoria_id: string;
   importe: number;
   fecha: string;
   descripcion: string | null;
+  creadoPor: string;
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -30,12 +35,12 @@ export const claveMes = (m: Mes) => `${m.anio}-${pad(m.mes + 1)}`;
 /** Fecha 'YYYY-MM-01' del primer día del mes, en hora local (evita desfases de zona horaria). */
 export const primerDiaISO = (m: Mes) => `${m.anio}-${pad(m.mes + 1)}-01`;
 
-/** Gastos del grupo entre dos meses (incluidos), para los gráficos. */
+/** Gastos visibles del grupo entre dos meses (incluidos), para los gráficos. */
 export async function cargarGastos(grupoId: string, desde: Mes, hasta: Mes): Promise<GastoFila[]> {
   const siguienteAlHasta = desplazarMes(hasta, 1);
   const { data, error } = await supabase
     .from('gastos')
-    .select('id, categoria_id, importe, fecha, descripcion')
+    .select('id, categoria_id, importe, fecha, descripcion, created_by')
     .eq('grupo_id', grupoId)
     .gte('fecha', primerDiaISO(desde))
     .lt('fecha', primerDiaISO(siguienteAlHasta));
@@ -46,32 +51,42 @@ export async function cargarGastos(grupoId: string, desde: Mes, hasta: Mes): Pro
     importe: Number(f.importe),
     fecha: f.fecha,
     descripcion: f.descripcion,
+    creadoPor: f.created_by,
   }));
 }
 
-/** Ingresos del grupo por mes: mapa 'YYYY-MM' → importe. */
-export async function cargarIngresos(grupoId: string, desde: Mes, hasta: Mes): Promise<Record<string, number>> {
+/** Ingresos por mes ('YYYY-MM'): totales de todo lo visible y los propios, por separado. */
+export async function cargarIngresos(
+  grupoId: string,
+  usuarioId: string,
+  desde: Mes,
+  hasta: Mes,
+): Promise<{ totales: Record<string, number>; propios: Record<string, number> }> {
   const { data, error } = await supabase
     .from('ingresos')
-    .select('mes, importe')
+    .select('mes, importe, created_by')
     .eq('grupo_id', grupoId)
     .gte('mes', primerDiaISO(desde))
     .lte('mes', primerDiaISO(hasta));
   if (error) throw error;
-  const mapa: Record<string, number> = {};
+  const totales: Record<string, number> = {};
+  const propios: Record<string, number> = {};
   for (const fila of data ?? []) {
     const clave = String(fila.mes).slice(0, 7);
-    mapa[clave] = (mapa[clave] ?? 0) + Number(fila.importe);
+    const importe = Number(fila.importe);
+    totales[clave] = (totales[clave] ?? 0) + importe;
+    if (fila.created_by === usuarioId) propios[clave] = (propios[clave] ?? 0) + importe;
   }
-  return mapa;
+  return { totales, propios };
 }
 
-/** Guarda el ingreso de un mes (crea o actualiza). */
-export async function guardarIngreso(grupoId: string, mes: Mes, importe: number): Promise<void> {
+/** Guarda mi ingreso de un mes (crea o actualiza solo mi fila). */
+export async function guardarIngreso(grupoId: string, usuarioId: string, mes: Mes, importe: number): Promise<void> {
   const { data, error } = await supabase
     .from('ingresos')
     .select('id')
     .eq('grupo_id', grupoId)
+    .eq('created_by', usuarioId)
     .eq('mes', primerDiaISO(mes))
     .limit(1);
   if (error) throw error;

@@ -45,7 +45,10 @@ export const textos = {
     codigoAyuda: 'Compártelo con la otra persona para que entre en el grupo.',
   },
   goToWork: {
-    titulo: 'Go To Work',
+    titulo: 'Estados',
+    yo: 'Yo',
+    sinNombre: 'Sin nombre',
+    sinEstadosVisibles: 'No hay estados que mostrar. Puede que no los comparta contigo.',
     estadosIniciales: [
       'Ya tomé el metro',
       'Ya llegué al trabajo',
@@ -62,8 +65,9 @@ export const textos = {
     sinRegistros: 'No hay estados registrados este día.',
     gestionarEstados: 'Gestionar estados',
     sinEstados: 'No tienes estados. Añade uno en “Gestionar estados”.',
+    soloLectura: 'Solo puedes ver estos estados. Quien los tiene decide si los comparte.',
     estados: {
-      titulo: 'Estados',
+      titulo: 'Mis estados',
       nuevo: 'Nombre del nuevo estado',
       anadir: 'Añadir estado',
       editar: 'Editar',
@@ -125,6 +129,7 @@ export const textos = {
     guardarNombre: 'Guardar nombre',
     sinNombre: 'Sin nombre',
     soloLectura: 'Solo puedes cambiar tu propio plan y tus marcas.',
+    sinRutinaVisible: 'Sin rutina hoy, o no la comparte contigo',
     elegirRutina: 'Elige la rutina de este día',
     planDe: (nombre: string) => `Plan de ${nombre}`,
     sinMiembros: 'Aún no hay miembros en el grupo.',
@@ -175,6 +180,7 @@ export const textos = {
     abrir: 'Ver resumen del mes',
     gastado: 'Gastado',
     ingresos: 'Ingresos del mes',
+    misIngresos: 'Mis ingresos del mes',
     guardarIngresos: 'Guardar ingresos',
     ahorro: 'Ahorro',
     porCategoria: 'Gasto por categoría',
@@ -243,11 +249,24 @@ export const textos = {
     titulo: 'Inicio',
     modulos: {
       gimnasio: { titulo: 'Gimnasio', descripcion: 'Rutinas de musculación' },
-      goToWork: { titulo: 'Go To Work', descripcion: 'Estados del trabajo del día' },
+      goToWork: { titulo: 'Estados', descripcion: 'Estados del día de cada persona' },
       compras: { titulo: 'Compras del mes', descripcion: 'Gastos, gráficos y ahorro mensual' },
     },
     proximamente: 'Esta sección se construye en los siguientes pasos.',
     widget: 'Widget de estado',
+    privacidad: 'Privacidad y compartir',
+  },
+  privacidad: {
+    titulo: 'Privacidad y compartir',
+    descripcion:
+      'Por defecto, todas las personas del grupo ven tus datos de cada módulo. Desactiva un módulo para ocultárselo a alguien concreto. Solo tú puedes cambiarlo.',
+    sinOtros: 'Aún no hay otras personas en el grupo.',
+    modulos: {
+      estados: 'Estados',
+      gimnasio: 'Gimnasio',
+      compras: 'Compras y gastos',
+    },
+    error: 'No se pudo guardar el cambio.',
   },
   errorGrupo: {
     titulo: 'No se pudo cargar tu grupo',

@@ -27,7 +27,7 @@ type Actual = { estado: EstadoTrabajo | null; hora: string | null };
  * Se actualiza sola cuando cambia el grupo (también desde el widget o desde otro miembro).
  */
 export function TarjetaEstadoActual() {
-  const { grupo } = useAuth();
+  const { grupo, usuarioId } = useAuth();
   const grupoId = grupo?.id;
   const versionRegistros = useVersionTabla('registros_trabajo');
   const versionEstados = useVersionTabla('estados_trabajo');
@@ -39,13 +39,13 @@ export function TarjetaEstadoActual() {
   const [error, setError] = useState<ErrorDescrito | null>(null);
 
   const cargar = useCallback(async () => {
-    if (!grupoId) return;
+    if (!grupoId || !usuarioId) return;
     try {
-      // Si el grupo es nuevo, crea los estados de ejemplo (idempotente).
-      await sembrarEstadosIniciales(grupoId, textos.goToWork.estadosIniciales);
+      // Si es la primera vez, crea mis estados de ejemplo (idempotente).
+      await sembrarEstadosIniciales(grupoId, usuarioId, textos.goToWork.estadosIniciales);
       const [todos, registros] = await Promise.all([
-        listarEstados(grupoId, true),
-        listarRegistros(grupoId, ...rangoHoy()),
+        listarEstados(grupoId, usuarioId, true),
+        listarRegistros(grupoId, usuarioId, ...rangoHoy()),
       ]);
       const ultimoRegistro = registros[0] ?? null;
       const estadoUltimo = ultimoRegistro ? todos.find((e) => e.id === ultimoRegistro.estado_id) ?? null : null;
@@ -60,7 +60,7 @@ export function TarjetaEstadoActual() {
     } finally {
       setCargando(false);
     }
-  }, [grupoId]);
+  }, [grupoId, usuarioId]);
 
   useEffect(() => {
     cargar();
@@ -70,10 +70,10 @@ export function TarjetaEstadoActual() {
 
   async function mover(direccion: 'siguiente' | 'anterior') {
     const destino = direccion === 'siguiente' ? siguiente : anterior;
-    if (!grupoId || !destino) return;
+    if (!grupoId || !usuarioId || !destino) return;
     setOcupado(direccion);
     try {
-      await registrarEstado(grupoId, destino.id);
+      await registrarEstado(grupoId, usuarioId, destino.id);
       await cargar();
     } catch (e) {
       setError(describirError(e));

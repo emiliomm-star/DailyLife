@@ -49,12 +49,23 @@ export function SincronizacionProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!grupoId) return;
 
+    const recargar = (tabla: TablaSincronizada) => () =>
+      setVersiones((actuales) => ({ ...actuales, [tabla]: actuales[tabla] + 1 }));
+
     let canal = supabase.channel(`grupo-${grupoId}`);
     for (const tabla of TABLAS_SINCRONIZADAS) {
+      // Altas y cambios: filtrados por grupo.
       canal = canal.on(
         'postgres_changes',
         { event: '*', schema: 'public', table: tabla, filter: `grupo_id=eq.${grupoId}` },
-        () => setVersiones((actuales) => ({ ...actuales, [tabla]: actuales[tabla] + 1 })),
+        recargar(tabla),
+      );
+      // Borrados: no se pueden filtrar por grupo, porque Supabase solo envía el id en los borrados
+      // (con RLS activo). Se escuchan sin filtro y se recarga la tabla; el id no revela datos.
+      canal = canal.on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: tabla },
+        recargar(tabla),
       );
     }
     canal.subscribe((estado) => {

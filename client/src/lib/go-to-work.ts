@@ -105,6 +105,18 @@ export async function quitarEstado(estadoId: string): Promise<void> {
   }
 }
 
+/**
+ * Guarda el orden de mis estados: cada uno recibe su posición en `orden`.
+ * Solo se escriben los que cambian de sitio.
+ */
+export async function guardarOrden(cambios: ReadonlyArray<{ id: string; orden: number }>): Promise<void> {
+  const resultados = await Promise.all(
+    cambios.map((cambio) => supabase.from('estados_trabajo').update({ orden: cambio.orden }).eq('id', cambio.id)),
+  );
+  const fallo = resultados.find((resultado) => resultado.error);
+  if (fallo?.error) throw fallo.error;
+}
+
 /** Registra que se ha marcado un estado propio ahora mismo. La fecha y hora la guarda la base de datos. */
 export async function registrarEstado(grupoId: string, usuarioId: string, estadoId: string): Promise<void> {
   const { error } = await supabase

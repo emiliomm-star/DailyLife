@@ -4,6 +4,7 @@ import { ScrollViewStyleReset } from 'expo-router/html';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, useColorScheme } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { Boton, Mensaje, Pantalla } from '@/components/formulario';
@@ -17,21 +18,23 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Head>
-        <title>DailyLife</title>
-        <meta name="theme-color" content="#208AEF" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-title" content="DailyLife" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-      </Head>
-      <ScrollViewStyleReset />
-      <AuthProvider>
-        <AnimatedSplashOverlay />
-        <RootStack />
-      </AuthProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Head>
+          <title>DailyLife</title>
+          <meta name="theme-color" content="#208AEF" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-title" content="DailyLife" />
+          <link rel="manifest" href="/manifest.json" />
+          <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        </Head>
+        <ScrollViewStyleReset />
+        <AuthProvider>
+          <AnimatedSplashOverlay />
+          <RootStack />
+        </AuthProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 

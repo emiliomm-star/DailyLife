@@ -1,16 +1,24 @@
 import { Stack, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
-import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeIn, useSharedValue } from 'react-native-reanimated';
 
 import { Boton, Campo, Mensaje } from '@/components/formulario';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
-import { actualizarEstado, crearEstado, EstadoTrabajo, listarEstados, quitarEstado } from '@/lib/go-to-work';
+import {
+  actualizarEstado,
+  crearEstado,
+  EstadoTrabajo,
+  guardarOrden,
+  listarEstados,
+  quitarEstado,
+} from '@/lib/go-to-work';
 import { colorDeTexto, ICONOS, PALETA, visualDe } from '@/lib/estados-visual';
 import { EstadoIcono } from '@/components/estado-icono';
+import { FilaArrastrable, PASO_FILA } from '@/components/fila-arrastrable';
 import { SelectorIcono } from '@/components/selector-icono';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
 
@@ -31,6 +39,10 @@ export default function GestionEstadosScreen() {
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<ErrorDescrito | null>(null);
+  // Arrastre de una fila: de qué hueco sale y a cuál llega. El ref lo leen los gestos sin esperar al render.
+  const [arrastre, setArrastre] = useState<{ origen: number; destino: number } | null>(null);
+  const arrastreRef = useRef<{ origen: number; destino: number } | null>(null);
+  const dragY = useSharedValue(0);
 
   const cargar = useCallback(async () => {
     if (!grupoId || !usuarioId) return;
@@ -98,80 +110,157 @@ export default function GestionEstadosScreen() {
     operar(() => quitarEstado(estado.id));
   }
 
+  function iniciarArrastre(indice: number) {
+    const inicial = { origen: indice, destino: indice };
+    arrastreRef.current = inicial;
+    setArrastre(inicial);
+  }
+
+  function moverArrastre(desplazamientoY: number) {
+    const actual = arrastreRef.current;
+    if (!actual) return;
+    const destino = Math.min(Math.max(actual.origen + Math.round(desplazamientoY / PASO_FILA), 0), estados.length - 1);
+    if (destino === actual.destino) return;
+    const siguiente = { origen: actual.origen, destino };
+    arrastreRef.current = siguiente;
+    setArrastre(siguiente);
+  }
+
+  /** Al soltar, la lista toma el nuevo orden y se guarda: cada estado recibe su posición (1, 2, …). */
+  async function soltarArrastre() {
+    const actual = arrastreRef.current;
+    arrastreRef.current = null;
+    setArrastre(null);
+    if (!actual || actual.origen === actual.destino) return;
+
+    const nueva = [...estados];
+    const [movido] = nueva.splice(actual.origen, 1);
+    nueva.splice(actual.destino, 0, movido);
+    const cambios = nueva.flatMap((estado, indice) => (estado.orden === indice + 1 ? [] : [{ id: estado.id, orden: indice + 1 }]));
+
+    setEstados(nueva);
+    setError(null);
+    setOcupado(true);
+    try {
+      await guardarOrden(cambios);
+    } catch (e) {
+      setError(describirError(e));
+    } finally {
+      setOcupado(false);
+      await cargar();
+    }
+  }
+
+  /** Desplazamiento de cada fila mientras otra se arrastra: las que quedan entre origen y destino se corren un hueco. */
+  function desplazamientoDe(indice: number): number {
+    if (!arrastre || indice === arrastre.origen) return 0;
+    const { origen, destino } = arrastre;
+    if (origen < destino && indice > origen && indice <= destino) return -PASO_FILA;
+    if (origen > destino && indice < origen && indice >= destino) return PASO_FILA;
+    return 0;
+  }
+
+  const ordenBloqueado = ocupado || editandoId !== null || estados.length < 2;
+
   return (
     <ScrollView contentContainerStyle={styles.contenido} keyboardShouldPersistTaps="handled">
       <Stack.Screen options={{ title: t.titulo }} />
 
       <ThemedView style={styles.columna}>
-        {estados.map((estado) => {
-          const visual = visualDe(estado);
-          return (
-          <Animated.View key={estado.id} layout={LinearTransition} entering={FadeIn}>
-          <ThemedView type="backgroundElement" style={styles.fila}>
-            <ThemedView style={[styles.punto, { backgroundColor: visual.color }]}>
-              <EstadoIcono clave={visual.icono} color={colorDeTexto(visual.color)} tamano={20} />
-            </ThemedView>
-            {editandoId === estado.id ? (
-              <ThemedView style={styles.flexible}>
-                <Campo
-                  etiqueta={t.nuevo}
-                  value={textoEdicion}
-                  onChangeText={setTextoEdicion}
-                  onSubmitEditing={() => guardarEdicion(estado)}
-                  autoFocus
-                />
-                <ThemedText type="small" themeColor="textSecondary">{t.icono}</ThemedText>
-                <SelectorIcono valor={iconoEdicion} onCambiar={setIconoEdicion} />
-                <ThemedText type="small" themeColor="textSecondary">Color</ThemedText>
-                <ThemedView style={styles.selector}>
-                  {PALETA.map((color) => (
-                    <Pressable
-                      key={color}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Color ${color}`}
-                      accessibilityState={{ selected: colorEdicion === color }}
-                      onPress={() => setColorEdicion(color)}
-                      style={[styles.muestra, { backgroundColor: color }, colorEdicion === color && styles.opcionSeleccionada]}>
-                      <ThemedText style={{ color: colorDeTexto(color) }}>{colorEdicion === color ? '✓' : ''}</ThemedText>
-                    </Pressable>
-                  ))}
-                </ThemedView>
-                <ThemedView style={styles.acciones}>
-                  <Pressable accessibilityRole="button" onPress={() => guardarEdicion(estado)} disabled={ocupado}>
-                    <ThemedText type="smallBold">{t.guardar}</ThemedText>
-                  </Pressable>
-                  <Pressable accessibilityRole="button" onPress={() => setEditandoId(null)}>
-                    <ThemedText type="small" themeColor="textSecondary">{t.cancelar}</ThemedText>
-                  </Pressable>
-                </ThemedView>
-              </ThemedView>
-            ) : (
-              <>
-                <ThemedText type="smallBold" style={styles.flexible}>
-                  {estado.nombre}
-                </ThemedText>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => {
-                    setEditandoId(estado.id);
-                    setTextoEdicion(estado.nombre);
-                    setIconoEdicion(visual.icono);
-                    setColorEdicion(visual.color);
-                  }}
-                  hitSlop={8}>
-                  <ThemedText type="small">{t.editar}</ThemedText>
-                </Pressable>
-                <Pressable accessibilityRole="button" onPress={() => quitar(estado)} hitSlop={8} disabled={ocupado}>
-                  <ThemedText type="small" style={styles.peligro}>
-                    {confirmandoId === estado.id ? t.confirmarQuitar : t.quitar}
-                  </ThemedText>
-                </Pressable>
-              </>
-            )}
-          </ThemedView>
-          </Animated.View>
-          );
-        })}
+        {estados.length > 1 && (
+          <ThemedText type="small" themeColor="textSecondary">
+            {t.ordenAyuda}
+          </ThemedText>
+        )}
+
+        <ThemedView style={styles.lista}>
+          {estados.map((estado, indice) => {
+            const visual = visualDe(estado);
+            const editando = editandoId === estado.id;
+            return (
+              <Animated.View key={estado.id} entering={FadeIn}>
+                <FilaArrastrable
+                  desplazamiento={desplazamientoDe(indice)}
+                  arrastrada={arrastre?.origen === indice}
+                  dragY={dragY}
+                  deshabilitada={ordenBloqueado}
+                  compacta={!editando}
+                  etiquetaArrastre={t.arrastrar}
+                  onInicio={() => iniciarArrastre(indice)}
+                  onMover={moverArrastre}
+                  onSoltar={soltarArrastre}>
+                  {editando ? (
+                    <ThemedView style={styles.flexible}>
+                      <ThemedView style={styles.cabeceraEdicion}>
+                        <ThemedView style={[styles.punto, { backgroundColor: visual.color }]}>
+                          <EstadoIcono clave={visual.icono} color={colorDeTexto(visual.color)} tamano={20} />
+                        </ThemedView>
+                        <ThemedView style={styles.flexible}>
+                          <Campo
+                            etiqueta={t.nuevo}
+                            value={textoEdicion}
+                            onChangeText={setTextoEdicion}
+                            onSubmitEditing={() => guardarEdicion(estado)}
+                            autoFocus
+                          />
+                        </ThemedView>
+                      </ThemedView>
+                      <ThemedText type="small" themeColor="textSecondary">{t.icono}</ThemedText>
+                      <SelectorIcono valor={iconoEdicion} onCambiar={setIconoEdicion} />
+                      <ThemedText type="small" themeColor="textSecondary">Color</ThemedText>
+                      <ThemedView style={styles.selector}>
+                        {PALETA.map((color) => (
+                          <Pressable
+                            key={color}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Color ${color}`}
+                            accessibilityState={{ selected: colorEdicion === color }}
+                            onPress={() => setColorEdicion(color)}
+                            style={[styles.muestra, { backgroundColor: color }, colorEdicion === color && styles.opcionSeleccionada]}>
+                            <ThemedText style={{ color: colorDeTexto(color) }}>{colorEdicion === color ? '✓' : ''}</ThemedText>
+                          </Pressable>
+                        ))}
+                      </ThemedView>
+                      <ThemedView style={styles.acciones}>
+                        <Pressable accessibilityRole="button" onPress={() => guardarEdicion(estado)} disabled={ocupado}>
+                          <ThemedText type="smallBold">{t.guardar}</ThemedText>
+                        </Pressable>
+                        <Pressable accessibilityRole="button" onPress={() => setEditandoId(null)}>
+                          <ThemedText type="small" themeColor="textSecondary">{t.cancelar}</ThemedText>
+                        </Pressable>
+                      </ThemedView>
+                    </ThemedView>
+                  ) : (
+                    <>
+                      <ThemedView style={[styles.punto, { backgroundColor: visual.color }]}>
+                        <EstadoIcono clave={visual.icono} color={colorDeTexto(visual.color)} tamano={20} />
+                      </ThemedView>
+                      <ThemedText type="smallBold" numberOfLines={1} style={styles.flexible}>
+                        {estado.nombre}
+                      </ThemedText>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => {
+                          setEditandoId(estado.id);
+                          setTextoEdicion(estado.nombre);
+                          setIconoEdicion(visual.icono);
+                          setColorEdicion(visual.color);
+                        }}
+                        hitSlop={8}>
+                        <ThemedText type="small">{t.editar}</ThemedText>
+                      </Pressable>
+                      <Pressable accessibilityRole="button" onPress={() => quitar(estado)} hitSlop={8} disabled={ocupado}>
+                        <ThemedText type="small" style={styles.peligro}>
+                          {confirmandoId === estado.id ? t.confirmarQuitar : t.quitar}
+                        </ThemedText>
+                      </Pressable>
+                    </>
+                  )}
+                </FilaArrastrable>
+              </Animated.View>
+            );
+          })}
+        </ThemedView>
 
         <ThemedText type="small" themeColor="textSecondary">
           {t.quitarAviso}
@@ -205,13 +294,13 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     width: '100%',
   },
-  fila: {
+  lista: {
+    gap: Spacing.two,
+  },
+  cabeceraEdicion: {
     alignItems: 'center',
-    borderRadius: Spacing.two,
     flexDirection: 'row',
     gap: Spacing.three,
-    minHeight: 48,
-    padding: Spacing.three,
   },
   flexible: {
     flex: 1,

@@ -72,6 +72,8 @@ export const textos = {
       quitarAviso: 'Si ya tiene registros, se oculta de la lista, pero su historial se conserva.',
       nombreVacio: 'El nombre no puede estar vacío.',
       icono: 'Icono',
+      ordenAyuda: 'Arrastra ≡ para cambiar el orden. Es el orden en que el widget pasa de un estado al siguiente.',
+      arrastrar: 'Arrastrar para ordenar',
     },
   },
   dispositivos: {

@@ -12,7 +12,6 @@ import {
   listarEstados,
   listarRegistros,
   registrarEstado,
-  sembrarEstadosIniciales,
 } from '@/lib/go-to-work';
 import { vecinosDeEstado } from '@/lib/estados-secuencia';
 import { textos } from '@/lib/textos';
@@ -41,8 +40,6 @@ export function TarjetaEstadoActual() {
   const cargar = useCallback(async () => {
     if (!grupoId || !usuarioId) return;
     try {
-      // Si es la primera vez, crea mis estados de ejemplo (idempotente).
-      await sembrarEstadosIniciales(grupoId, usuarioId, textos.goToWork.estadosIniciales);
       const [todos, registros] = await Promise.all([
         listarEstados(grupoId, usuarioId, true),
         listarRegistros(grupoId, usuarioId, ...rangoHoy()),

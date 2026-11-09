@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth-context';
 import { actualizarEstado, crearEstado, EstadoTrabajo, listarEstados, quitarEstado } from '@/lib/go-to-work';
 import { colorDeTexto, ICONOS, PALETA, visualDe } from '@/lib/estados-visual';
 import { EstadoIcono } from '@/components/estado-icono';
+import { SelectorIcono } from '@/components/selector-icono';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
 
 const t = textos.goToWork.estados;
@@ -25,6 +26,7 @@ export default function GestionEstadosScreen() {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [textoEdicion, setTextoEdicion] = useState('');
   const [iconoEdicion, setIconoEdicion] = useState<string>(ICONOS[0].clave);
+  const [iconoNuevo, setIconoNuevo] = useState<string>(ICONOS[0].clave);
   const [colorEdicion, setColorEdicion] = useState<string>(PALETA[0]);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -67,7 +69,8 @@ export default function GestionEstadosScreen() {
       return;
     }
     const orden = Math.max(0, ...estados.map((estado) => estado.orden)) + 1;
-    const visual = visualDe({ nombre, orden });
+    // El color sale del nombre (o de la paleta); el icono es el que se ha elegido.
+    const visual = visualDe({ nombre, orden, icono: iconoNuevo });
     operar(async () => {
       await crearEstado(grupoId, usuarioId, nombre, orden, visual);
       setNuevo('');
@@ -117,20 +120,8 @@ export default function GestionEstadosScreen() {
                   onSubmitEditing={() => guardarEdicion(estado)}
                   autoFocus
                 />
-                <ThemedText type="small" themeColor="textSecondary">Icono</ThemedText>
-                <ThemedView style={styles.selector}>
-                  {ICONOS.map((icono) => (
-                    <Pressable
-                      key={icono.clave}
-                      accessibilityRole="button"
-                      accessibilityLabel={icono.etiqueta}
-                      accessibilityState={{ selected: iconoEdicion === icono.clave }}
-                      onPress={() => setIconoEdicion(icono.clave)}
-                      style={[styles.opcion, iconoEdicion === icono.clave && styles.opcionSeleccionada]}>
-                      <EstadoIcono clave={icono.clave} color={iconoEdicion === icono.clave ? '#1A1A1A' : '#60646C'} tamano={22} />
-                    </Pressable>
-                  ))}
-                </ThemedView>
+                <ThemedText type="small" themeColor="textSecondary">{t.icono}</ThemedText>
+                <SelectorIcono valor={iconoEdicion} onCambiar={setIconoEdicion} />
                 <ThemedText type="small" themeColor="textSecondary">Color</ThemedText>
                 <ThemedView style={styles.selector}>
                   {PALETA.map((color) => (
@@ -193,6 +184,8 @@ export default function GestionEstadosScreen() {
           onSubmitEditing={anadir}
           returnKeyType="done"
         />
+        <ThemedText type="small" themeColor="textSecondary">{t.icono}</ThemedText>
+        <SelectorIcono valor={iconoNuevo} onCambiar={setIconoNuevo} />
         <Boton titulo={t.anadir} onPress={anadir} cargando={ocupado} />
 
         {error && <Mensaje texto={error.texto} detalle={error.detalle} />}
@@ -245,13 +238,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-  },
-  opcion: {
-    alignItems: 'center',
-    borderRadius: Spacing.two,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
   },
   muestra: {
     alignItems: 'center',

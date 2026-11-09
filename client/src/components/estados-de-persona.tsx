@@ -15,7 +15,6 @@ import {
   listarRegistros,
   RegistroTrabajo,
   registrarEstado,
-  sembrarEstadosIniciales,
 } from '@/lib/go-to-work';
 import { useAuth } from '@/lib/auth-context';
 import { describirError, type ErrorDescrito, textos } from '@/lib/textos';
@@ -65,14 +64,13 @@ export function EstadosDePersona({ duenoId, propio }: { duenoId: string; propio:
     }
   }, [grupoId, duenoId]);
 
-  // Carga inicial: si es mi vista, creo mis estados de ejemplo cuando todavía no tengo ninguno.
+  // Carga inicial de los estados de la persona.
   useEffect(() => {
     if (!grupoId) return;
     let activo = true;
     setCargandoEstados(true);
     (async () => {
       try {
-        if (propio && usuarioId) await sembrarEstadosIniciales(grupoId, usuarioId, t.estadosIniciales);
         const lista = await listarEstados(grupoId, duenoId);
         if (activo) setEstados(lista);
       } catch (e) {
@@ -84,7 +82,7 @@ export function EstadosDePersona({ duenoId, propio }: { duenoId: string; propio:
     return () => {
       activo = false;
     };
-  }, [grupoId, duenoId, propio, usuarioId]);
+  }, [grupoId, duenoId]);
 
   const cargarRegistros = useCallback(async () => {
     if (!grupoId) return;

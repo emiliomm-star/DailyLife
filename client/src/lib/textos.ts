@@ -50,13 +50,6 @@ export const textos = {
     yo: 'Yo',
     sinNombre: 'Sin nombre',
     sinEstadosVisibles: 'No hay estados que mostrar. Puede que no los comparta contigo.',
-    estadosIniciales: [
-      'Ya tomé el metro',
-      'Ya llegué al trabajo',
-      'Voy a desayunar',
-      'Salí del trabajo',
-      'Ya estoy en casa',
-    ],
     marcar: 'Toca un estado para registrarlo',
     registrado: (nombre: string, hora: string) => `Registrado: ${nombre} (${hora})`,
     hoy: 'Hoy',
@@ -78,6 +71,7 @@ export const textos = {
       confirmarQuitar: '¿Seguro?',
       quitarAviso: 'Si ya tiene registros, se oculta de la lista, pero su historial se conserva.',
       nombreVacio: 'El nombre no puede estar vacío.',
+      icono: 'Icono',
     },
   },
   dispositivos: {

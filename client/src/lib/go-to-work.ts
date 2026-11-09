@@ -56,30 +56,6 @@ export async function listarEstados(
   return data ?? [];
 }
 
-/**
- * Crea los estados de ejemplo para la persona indicada si todavía no tiene ninguno.
- * Es seguro llamarla varias veces: la restricción unique(grupo_id, created_by, nombre) evita duplicados.
- */
-export async function sembrarEstadosIniciales(
-  grupoId: string,
-  usuarioId: string,
-  nombres: readonly string[],
-): Promise<void> {
-  const existentes = await listarEstados(grupoId, usuarioId, true);
-  if (existentes.length > 0) return;
-
-  const { error } = await supabase.from('estados_trabajo').upsert(
-    nombres.map((nombre, indice) => ({
-      grupo_id: grupoId,
-      created_by: usuarioId,
-      nombre,
-      orden: indice + 1,
-    })),
-    { onConflict: 'grupo_id,created_by,nombre', ignoreDuplicates: true },
-  );
-  if (error) throw error;
-}
-
 export async function crearEstado(
   grupoId: string,
   usuarioId: string,

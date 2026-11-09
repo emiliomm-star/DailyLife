@@ -1,5 +1,6 @@
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { Boton } from '@/components/formulario';
@@ -8,6 +9,8 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { colorDeTexto } from '@/lib/estados-visual';
+import { listarMiembros } from '@/lib/plan';
+import { useVersionTabla } from '@/lib/sincronizacion';
 import { TarjetaEstadoActual } from '@/components/tarjeta-estado-actual';
 import { textos } from '@/lib/textos';
 
@@ -19,17 +22,48 @@ const modulos = [
 ] as const;
 
 export default function DashboardScreen() {
-  const { grupo, cerrarSesion } = useAuth();
+  const { grupo, usuarioId, cerrarSesion } = useAuth();
+  const grupoId = grupo?.id;
+  const versionMiembros = useVersionTabla('miembros_grupo');
+  const [miNombre, setMiNombre] = useState<string | null | undefined>(undefined);
+
+  // Mi nombre dentro del grupo (miembros_grupo.nombre), para distinguirme del resto de miembros.
+  useEffect(() => {
+    if (!grupoId || !usuarioId) return;
+    let activo = true;
+    listarMiembros(grupoId)
+      .then((miembros) => {
+        if (!activo) return;
+        setMiNombre(miembros.find((m) => m.user_id === usuarioId)?.nombre?.trim() || null);
+      })
+      .catch(() => {
+        if (activo) setMiNombre(null);
+      });
+    return () => {
+      activo = false;
+    };
+  }, [grupoId, usuarioId, versionMiembros]);
 
   return (
     <ScrollView contentContainerStyle={styles.contenido}>
       <Stack.Screen options={{ title: textos.dashboard.titulo, headerRight: () => null }} />
 
       <ThemedView style={styles.columna}>
-        <ThemedText type="subtitle">
-          {textos.inicio.bienvenida}
-          {grupo ? `, ${grupo.nombre}` : ''}
-        </ThemedText>
+        <ThemedView style={styles.saludo}>
+          <ThemedText type="subtitle">
+            {miNombre ? `${textos.inicio.bienvenida}, ${miNombre}` : textos.inicio.bienvenida}
+          </ThemedText>
+          {grupo && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {textos.inicio.grupo}: {grupo.nombre}
+            </ThemedText>
+          )}
+          {miNombre === null && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {textos.inicio.sinNombre}
+            </ThemedText>
+          )}
+        </ThemedView>
 
         <TarjetaEstadoActual />
 
@@ -89,6 +123,9 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     maxWidth: MaxContentWidth,
     width: '100%',
+  },
+  saludo: {
+    gap: Spacing.one,
   },
   tarjeta: {
     borderRadius: Spacing.three,

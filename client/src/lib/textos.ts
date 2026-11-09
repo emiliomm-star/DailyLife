@@ -41,6 +41,7 @@ export const textos = {
   inicio: {
     bienvenida: 'Hola',
     grupo: 'Grupo',
+    sinNombre: 'Ponte un nombre en el plan del gimnasio para verlo aquí.',
     codigoInvitacion: 'Código de invitación',
     codigoAyuda: 'Compártelo con la otra persona para que entre en el grupo.',
   },
